@@ -8,6 +8,15 @@ Principle of work
 
 Library needs one analog input, and one digital output. Thresholds are set up to identify when digital output should be turned ON or OFF. Wiring is assumed in a way that higher reading would mean a need to turn sensor ON, and lower would mean turning it OFF. "Neutral" buffer is supported, where no action is desired, so output stays in the same state as it was before. Action delay is a configurable amount of time that needs to pass in a consistent "change desired" state before executing the request. See attached Application.PNG for suggested wiring. (NOTE: it assumes a need to ground your control wire, so make sure your application needs the same. If not - modify output control wiring as necessary.)
 
+Hardware components
+-------------------
+
+A few notes on hardware components of the application image.
+
+ * Photo sensor is just any photo sensitive resistor.
+ * Trimmer (20k in my case) is used to adjust "sensitivity" of the sensor without a need to re-program the chip. Not really required, but nice to have if you want ot do it on the spot.
+ * Sum of resistor on the sensor circuit and half of the trimmer (e.g. in the "neutral" position) can be adjusted to achieve maximum resolution in the desired range. Because resistor reading is not linear, resolution will drop the farther you go from the optimal range.
+
 Features
 --------
 
