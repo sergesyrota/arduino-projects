@@ -18,6 +18,7 @@
 HumidityCheck::HumidityCheck(int pin)
 {
   dht11Pin = pin;
+  pinMode(dht11Pin, OUTPUT);
   fanOn = false; // initialize to FALSE just in case
 }
 
@@ -124,7 +125,8 @@ boolean HumidityCheck::dhtRead() {
 // Produces a short error buzz to notify that this needs attention
 void HumidityCheck::errorBuzz() {
   if (errorBuzzerPin) {
-	// @todo: implement buzzing
+    pinMode(errorBuzzerPin, OUTPUT);
+    tone(errorBuzzerPin, 523, 2000);
   }
 }
 

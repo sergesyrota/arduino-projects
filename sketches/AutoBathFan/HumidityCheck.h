@@ -26,9 +26,9 @@ private:
         static const int RHindexSize = 360; // constant containing size of the RHvalues, to avoid constant recalculations
         int RHindex; // Pointer to the next available index of RHvalues
         int RHindexFilled; // This will hold number of elements we've already filled our index with, so that we don't interpret 0 as a real value upon startup
-        static const byte shortPeriod = 10; // How many previous reading to consider for short term trend
-        static const byte longPeriod = 60; // How many previous reading to consider for long term trend
-        static const byte readingPeriod = 0; // Minimum number of seconds between readings (lower number, more frequent readings)
+        static const byte shortPeriod = 20; // How many previous reading to consider for short term trend
+        static const byte longPeriod = 360; // How many previous reading to consider for long term trend
+        static const byte readingPeriod = 10; // Minimum number of seconds between readings (lower number, more frequent readings)
         float getAverage(int numElements); // 
 
         /* Sensor related data */
