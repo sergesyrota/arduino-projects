@@ -11,15 +11,28 @@
 */
 
 #include "HumidityCheck.h"
-#include <Arduino.h>
-#include <dht11.h>
-#include <Time.h>
 
 HumidityCheck::HumidityCheck(int pin)
 {
   dht11Pin = pin;
   pinMode(dht11Pin, OUTPUT);
   fanOn = false; // initialize to FALSE just in case
+#if LOGGER
+  // Assumed SD card is connected to standard pins 10,11,12,13
+  // PIN 9 is used for power for the SD card on my breakout
+  pinMode(9, OUTPUT);
+  digitalWrite(9, HIGH);
+  pinMode(10, OUTPUT);
+  if (!SD.begin(10)) {
+    Serial.println("Card failed, or not present");
+  } else {
+    Serial.println("card initialized.");
+    // If we don't have a file yet, then we need to write the header there
+    if (!SD.exists(LOGFILENAME)) {
+      writeLog("Timestamp,Humidity,Short-term avg*100,Long-term avg*100,Trigger RH*100,Fan state");
+    }
+  }
+#endif
 }
 
 // Main function of the check, runs all logic, and returns desired state of the fan
@@ -44,33 +57,22 @@ boolean HumidityCheck::check()
     // Set long and short averages to avoid constant recalculation
     float shortAverage = getAverage(shortPeriod);
     float longAverage = getAverage(longPeriod);
-    
-    // Some debugging information
-    Serial.print("Current humidity: ");
-    Serial.println(dht.humidity);
-    Serial.print("Short term average: ");
-    Serial.println(shortAverage);
-    Serial.print("Long term average: ");
-    Serial.println(longAverage);
+    float triggerRH;
     
     if (fanOn) {
       // We were sending ON signals before, let's check if OFF conditions are met
       if (shortAverage < triggeredHumidity) {
         // we've returned below the humidity that triggered the fan before, so can disable the fan
         fanOn = false;
-        return false;
       }
       // if it's been more than 2 hours and the fan is still on, then something went wrong, so let's disable it
       if ((now() - onTime) > (7200)) {
         fanOn = false;
-        return false;
       }
     } else {
       // Previous known state was OFF, so need to check for ON conditions
       // Get RH that we need to compare short term average to
-      float triggerRH = getTriggerRH(longAverage);
-      Serial.print("triggerRH: ");
-      Serial.println(triggerRH);
+      triggerRH = getTriggerRH(longAverage);
       
       if (shortAverage > triggerRH) {
         // Trigger condition reached
@@ -84,8 +86,49 @@ boolean HumidityCheck::check()
         return true;
       }
     }
+#if LOGGER
+    // Assemble data string for SD card logger
+    String dataString = "";
+    dataString += now();
+    dataString += ",";
+    dataString += String(dht.humidity);
+    dataString += ",";
+    dataString += (int)(shortAverage*100); // float to string is not supported
+    dataString += ",";
+    dataString += (int)(longAverage*100); // float to string is not supported
+    dataString += ",";
+    dataString += (int)(triggerRH*100); // float to string is not supported
+    dataString += ",";
+    if (fanOn) {
+      dataString += "ON";
+    } else {
+      dataString += "OFF";
+    }
+    // And write this line in the file
+    writeLog(dataString);
+#endif
   }
   return fanOn;
+}
+
+// Writes a single line in the SD card log file
+void HumidityCheck::writeLog(String line) {
+#if LOGGER
+    File dataFile = SD.open(LOGFILENAME, FILE_WRITE);
+    
+    // if the file is available, write to it:
+    if (dataFile) {
+      dataFile.println(line);
+      dataFile.close();
+      // print to the serial port too:
+      Serial.println(line);
+    }  
+    // if the file isn't open, pop up an error:
+    else {
+      Serial.print("Error writing to ");
+     Serial.println(LOGFILENAME);
+    } 
+#endif
 }
 
 // Calculates trigger RH, given the baseline

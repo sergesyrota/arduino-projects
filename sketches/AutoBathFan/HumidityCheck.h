@@ -12,6 +12,12 @@
 #include <dht11.h>
 #include <Time.h>
 
+#define LOGGER 1
+#if LOGGER
+#include <SD.h>
+#define LOGFILENAME "Humid.log"
+#endif
+
 class HumidityCheck
 {
 public:
@@ -43,6 +49,7 @@ private:
 	long onTime; // second timestamp for when fan was last turned ON
         int triggeredHumidity; // Humidity at which fan was triggered to be ON, this is the target to get back to
 
+        void writeLog(String line); // For data logger. Empty when not requested
 };
 
 #endif

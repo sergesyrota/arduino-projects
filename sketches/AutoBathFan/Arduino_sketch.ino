@@ -1,11 +1,15 @@
 #include <Time.h>
 #include "HumidityCheck.h"
 #include <dht11.h>
-#include <RunningAverage.h>
+
+// For some reason sketch won't compile without explicit inclusion in here
+#if LOGGER
+#include <SD.h>
+#endif
 
 /* Pinout */
 #define DHT11PIN 5 // Data sensor for SHT11 sensor
-#define OUTPUTPIN 13 // Pin that triggers the fan
+#define OUTPUTPIN 4 // Pin that triggers the fan
 #define ERRORBUZZERPIN 1 // Pin that is connected to the buzzer so that we can signal error
 #define MOTIONPIN 6 // Pin that is connected to motion sensor output
 
