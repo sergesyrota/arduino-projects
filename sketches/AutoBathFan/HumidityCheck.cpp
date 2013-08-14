@@ -27,10 +27,6 @@ HumidityCheck::HumidityCheck(int pin)
     Serial.println("Card failed, or not present");
   } else {
     Serial.println("card initialized.");
-    // If we don't have a file yet, then we need to write the header there
-    if (!SD.exists(LOGFILENAME)) {
-      writeLog("Timestamp,Humidity,Short-term avg*100,Long-term avg*100,Trigger RH*100,Fan state");
-    }
   }
 #endif
 }
@@ -77,8 +73,9 @@ boolean HumidityCheck::check()
       if (shortAverage > triggerRH) {
         // Trigger condition reached
         // this will store humidity that we need to come back below to turn off the fan back; 
-        // We're taking long term average humidity, same that we used in the baseline
-        triggeredHumidity = longAverage;
+        // We're taking short term average humidity, as test shown that it's really hard to go back to the long term average
+        // In case of taking a shower, for example, long term goes from 42 to 
+        triggeredHumidity = shortAverage;
         // store current state and ON time for future reference
         onTime = now();
         fanOn = true;
@@ -90,6 +87,8 @@ boolean HumidityCheck::check()
     // Assemble data string for SD card logger
     String dataString = "";
     dataString += now();
+    dataString += ",";
+    dataString += String(dht.temperature);
     dataString += ",";
     dataString += String(dht.humidity);
     dataString += ",";
@@ -105,6 +104,13 @@ boolean HumidityCheck::check()
       dataString += "OFF";
     }
     // And write this line in the file
+    writeLog(dataString);
+#endif
+  } else {
+#if LOGGER
+    String dataString = "";
+    dataString += now();
+    dataString += ",ERROR READING SENSOR!";
     writeLog(dataString);
 #endif
   }
@@ -126,7 +132,7 @@ void HumidityCheck::writeLog(String line) {
     // if the file isn't open, pop up an error:
     else {
       Serial.print("Error writing to ");
-     Serial.println(LOGFILENAME);
+      Serial.println(LOGFILENAME);
     } 
 #endif
 }
@@ -160,8 +166,6 @@ boolean HumidityCheck::dhtRead() {
   }
   // If we did not hit OK state (we should've returned from there) - we have an error of some sort, and need to signal it
   errorBuzz();
-  // override for the test until I get the sensor to hook up
-  dht.humidity = analogRead(A0)/10;
   return false;
 }
 
@@ -169,7 +173,7 @@ boolean HumidityCheck::dhtRead() {
 void HumidityCheck::errorBuzz() {
   if (errorBuzzerPin) {
     pinMode(errorBuzzerPin, OUTPUT);
-    tone(errorBuzzerPin, 523, 2000);
+    tone(errorBuzzerPin, 523, 200);
   }
 }
 
