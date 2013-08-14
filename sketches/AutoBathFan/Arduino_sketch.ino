@@ -8,7 +8,7 @@
 #endif
 
 /* Pinout */
-#define DHT11PIN 5 // Data sensor for SHT11 sensor
+#define DHT11PIN 5 // Data sensor for DHT11 sensor
 #define OUTPUTPIN 4 // Pin that triggers the fan
 #define ERRORBUZZERPIN 1 // Pin that is connected to the buzzer so that we can signal error
 #define MOTIONPIN 6 // Pin that is connected to motion sensor output
