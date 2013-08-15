@@ -61,8 +61,8 @@ boolean HumidityCheck::check()
         // we've returned below the humidity that triggered the fan before, so can disable the fan
         fanOn = false;
       }
-      // if it's been more than 2 hours and the fan is still on, then something went wrong, so let's disable it
-      if ((now() - onTime) > (7200)) {
+      // if it's been more than 4 hours and the fan is still on, then something went wrong, so let's disable it
+      if ((now() - onTime) > (14400)) {
         fanOn = false;
       }
     } else {
