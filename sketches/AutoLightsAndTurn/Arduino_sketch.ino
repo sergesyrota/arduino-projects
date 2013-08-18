@@ -10,16 +10,14 @@ OneTouchLaneChange lane = OneTouchLaneChange();
 
 void setup() {
   // Set thresholds for on and off readings
-  headlight.setSensorThreshold(300, 640);
+  headlight.setSensorThreshold(300, 500);
+  // Override default delay, 5 sec should be better.
+  headlight.switchDelay = 5000;
   
   // Configuration for lane change module
   // input and output pins respectively
   lane.addPair(8,9);
   lane.addPair(7,10);
-  // Amount of time signal should be left ON after input is gone, ms
-  lane.stickTime = 3000;
-  // If input continues beyond this amount of time - ignore, ms
-  lane.ignoreThreshold = 300;
 }
 
 
