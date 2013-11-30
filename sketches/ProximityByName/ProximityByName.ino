@@ -9,10 +9,14 @@ SoftwareSerial btSerial(5, 6); // RX | TX
 
 // Array for device addresses and expected return to match name
 #define NUM_DEVICES 2 // should match number of elements below
-// MAC addresses of recognized bluetooth devices. Format: 0000,00,000000
-String deviceAddress[NUM_DEVICES] = {"0000,00,000000", "0000,00,000000"};
-// Expected response of device name, starting with "+RNAME:"
-String expectedResponse[NUM_DEVICES] = {"+RNAME:btdevice", "+RNAME:btdevice"};
+struct BluetoothDevices {
+  // MAC addresses of recognized bluetooth devices. Format: 0000,00,000000
+  static const String address[NUM_DEVICES];
+  // Expected response of device name, starting with "+RNAME:"
+  static const String name[NUM_DEVICES];
+};
+// Actual device names and addresses are stored in include file
+#include "BluetoothDevices.h"
 
 // Some state variables to keep track of things
 int currentState = LOW;
@@ -30,7 +34,6 @@ void setup()
   delay(1000);
   digitalWrite(KEY_PIN, HIGH);
   delay(1000);
-  Serial.begin(9600);
   btSerial.begin(9600);
 }
 
@@ -43,9 +46,8 @@ void loop()
     // Clear buffer for module communication
     content = "";
     // Send request for device name, using the address provided.
-    Serial.println("Sending request");
     btSerial.write("at+rname?");
-    btSerial.write((deviceAddress[i]).c_str());
+    btSerial.write((BluetoothDevices::address[i]).c_str());
     btSerial.write("\r\n");
     while(!btSerial.available()) {
       // wait for response
@@ -55,9 +57,8 @@ void loop()
         character = btSerial.read();
         content.concat(character);
     }
-    Serial.print(content);
     // If return matches with our expected response, that means device is in range :)
-    if (content.startsWith(expectedResponse[i])) {
+    if (content.startsWith(BluetoothDevices::name[i])) {
       output=HIGH;
     }
   }
@@ -65,6 +66,11 @@ void loop()
   // Happened to me one of 4-5 times on average, running without any delay functions.
   // That's why we need a delay that will switch output ON immediately, but turn OFF with a delay to compensate for false negatives
   delaySwitch(output);
+  // If we have device in range, we don't want to constantly talk to it
+  // Delay by 5 seconds so target device doesn't have to constantly respond
+  if (output == HIGH) {
+    delay(5000);
+  }
 }
 
 // Switch ON immediately, while delay switching OFF
