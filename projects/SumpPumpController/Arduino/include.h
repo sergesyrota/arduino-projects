@@ -28,18 +28,6 @@ enum alertReason {
   ExternallyForced // When external command to sound alert arrives
 };
 
-// HC-SR04 related data
-struct Range {
-  // Time last reading was taken
-  unsigned long timeTaken;
-  // Distance to water as measured by the sensor
-  int distance;
-  // Observed water level highs and lows, to determine AC pump cycles
-  int highs[2];
-  int lows[2];
-};
-
-
 // DC Pump self-test related data
 struct Selftest {
   // Time last self test was ran

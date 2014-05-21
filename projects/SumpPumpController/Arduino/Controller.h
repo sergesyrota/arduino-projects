@@ -1,12 +1,12 @@
-#ifndef SelfTest_h
-#define SelfTest_h
+#ifndef Controller_h
+#define Controller_h
 
 #include <Arduino.h>
 
-class SelfTest
+class Controller
 {
   public:
-    SelfTest();
+    Controller();
     // Time last self test was ran
     unsigned long lastTestTime;
     // AC pump cycle number at the time of last test

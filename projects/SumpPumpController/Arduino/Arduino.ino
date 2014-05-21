@@ -3,7 +3,7 @@
 #include <SyrotaAutomation1.h>
 #include <Time.h>
 #include "include.h"
-#include "SelfTest.h"
+#include "Controller.h"
 
 SyrotaAutomation net = SyrotaAutomation(2);
 Ultrasonic ultrasonic(9,8); // Trig, Echo
