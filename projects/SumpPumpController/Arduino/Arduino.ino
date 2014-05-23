@@ -3,7 +3,6 @@
 #include <SyrotaAutomation1.h>
 #include <Time.h>
 #include "include.h"
-#include "Controller.h"
 
 SyrotaAutomation net = SyrotaAutomation(2);
 Ultrasonic ultrasonic(9,8); // Trig, Echo
@@ -11,10 +10,7 @@ Ultrasonic ultrasonic(9,8); // Trig, Echo
 struct Range range;
 struct Selftest selftest;
 struct Alert alert;
-SelfTest selftestclass = SelfTest();
-
-// Total AC pump cycles observed
-unsigned long acPumpCycles = 0;
+struct AcPump acpump;
 
 // Buffer for char conversions
 char buf [40];
@@ -51,8 +47,12 @@ void loop()
     } else if (net.assertCommand("getBattVoltage")) {
       sprintf(buf, "%dmV", readBatteryVoltage());
       net.sendResponse(buf);
-    } else if (net.assertCommand("getAcPumpCycles")) {
-      sprintf(buf, "%d", acPumpCycles);
+    } else if (net.assertCommand("getAcPumpOnTime")) {
+      if (acpump.currentlyOn) {
+        sprintf(buf, "%d", acpump.onSeconds + (millis() - acpump.switchOnTime));
+      } else {
+        sprintf(buf, "%d", acpump.onSeconds);
+      }
       net.sendResponse(buf);
     } else if (net.assertCommand("getLastSelfTest")) {
       sendSelfTestResponse();
@@ -67,6 +67,9 @@ void loop()
       net.sendResponse("Unrecognized command");
     }
   }
+  
+  // Read pressure and figure out those alerts
+  readPressure();
   
   // Read water depth if it's been too long since last time
   if (now() - range.timeTaken > DEPTH_MEASURE_TIME) {
@@ -101,14 +104,14 @@ void sendDebugResponse()
 {
   sprintf(buf, "rangeLH[0]=%d,%d", range.lows[0], range.highs[0]);
   net.responseSendPart(buf);
-  sprintf(buf, "rangeLH[1]=%d,%d", range.lows[1], range.highs[1]);
+  sprintf(buf, "&rangeLH[1]=%d,%d", range.lows[1], range.highs[1]);
   net.responseSendPart(buf);
-  sprintf(buf, "DcHeight=%d,%d", selftest.startingHeight, selftest.endingHeight);
+  sprintf(buf, "&DcHeight=%d,%d", selftest.startingHeight, selftest.endingHeight);
   net.responseSendPart(buf);
-//  sprintf(buf, );
-//  net.responseSendPart(buf);
-//  sprintf(buf, );
-//  net.responseSendPart(buf);
+  sprintf(buf, "&pressure=%d", analogRead(PRESSURE_SENSOR_PIN));
+  net.responseSendPart(buf);
+  sprintf(buf, "&AcPumpCycles=%d", acpump.onCycles);
+  net.responseSendPart(buf);
 //  sprintf(buf, );
 //  net.responseSendPart(buf);
 //  sprintf(buf, );
@@ -129,7 +132,7 @@ void sendSelfTestResponse()
 {
    sprintf(buf, "timeSince=%d&", (unsigned long)(now() - selftest.lastTestTime));
    net.responseSendPart(buf);
-   sprintf(buf, "cyclesSince=%d&", acPumpCycles-selftest.acCycles);
+   sprintf(buf, "cyclesSince=%d&", acpump.onCycles-selftest.acCycles);
    net.responseSendPart(buf);
    sprintf(buf, "voltage=%d&", selftest.batteryVoltageMv);
    net.responseSendPart(buf);
@@ -144,23 +147,26 @@ void sendSelfTestResponse()
 
 void checkDcSelfTestStart() 
 {
-  // Disabled until unit tests are covering
-  return;
   // Check number of cycles. If not reached threshold, exit right away.
-  if ((acPumpCycles - selftest.acCycles) < SELFTEST_AC_CYCLES) {
+  if ((acpump.onCycles - selftest.acCycles) < SELFTEST_AC_CYCLES) {
     return;
   }
+  // Check how long has passed since last self test. If not long enough, exit
+  if ((now() - selftest.lastTestTime) < SELFTEST_TIME_BETWEEN) {
+    return;
+  }
+  
   // Otherwise, we need to make sure water level is high enough for self test, but not too high for AC pump to be on at the same time
   // And also validate that range is sane
   if (range.highs[0] - range.lows[0] > 7 && // Last observer high/low looks legit
     range.highs[0] - range.distance >= 3 && // Make sure that we have at least 3 cm before reaching previous high
     range.highs[0] - range.distance < 10 && // But at the same time we're no more than 10 cm from reaching the top
-    range.distance > -60 // And just in case, hard code known distance at which we are reasonably sure there is enough water in the sump
+    range.distance > -55 // And just in case, hard code known distance at which we are reasonably sure there is enough water in the sump
   ) {
     // All self test conditions are met. Begin the test
     digitalWrite(DC_PUMP_TRIGGER_PIN, HIGH);
     selftest.lastTestTime = now();
-    selftest.acCycles = acPumpCycles;
+    selftest.acCycles = acpump.onCycles;
     selftest.startingHeight = range.distance;
     selftest.nowActive = true;
   }
@@ -264,7 +270,7 @@ unsigned int readDistance()
     range.highs[1] = range.distance;
     range.lows[1] = range.distance;
     // Increment AC pump cycles
-    acPumpCycles++;
+    acpump.onCycles++;
   }
   if (range.distance > range.highs[1]) {
     range.highs[1] = range.distance;
@@ -281,12 +287,44 @@ unsigned int readDistance()
   return range.distance;
 }
 
+int readPressure()
+{
+  acpump.lastPressure = analogRead(PRESSURE_SENSOR_PIN);
+  
+  // Alert business
+  if (acpump.lastPressure > ALERT_PRESSURE_LEVEL) {
+    raiseAlert(HighPressure, "High pressure");
+  } else {
+    resetAlert(HighPressure);
+  }
+  
+  boolean currentlyOn;
+  if (acpump.lastPressure > AC_PUMP_ON_THRESHOLD) {
+    currentlyOn = true;
+  } else {
+    currentlyOn = false;
+  }
+  
+  // If state change happened, need to record stats
+  if (currentlyOn != acpump.currentlyOn) {
+    if (currentlyOn) {
+      // If we went to ON, then we only need to collect timestamp. The rest is done on OFF state
+      acpump.switchOnTime = now();
+    } else {
+      // If we went from ON to OFF - need to record how long the pump was ON, and count cycles
+      acpump.onCycles++;
+      acpump.onSeconds += now() - acpump.switchOnTime;
+    }
+    acpump.currentlyOn = currentlyOn;
+  }
+  
+  return acpump.lastPressure;
+}
+
 // Figures out if pump is working or not, and returns a boolean
 boolean AcPumpOn()
 {
-  // Cannot determine this by water level, as sensor shows +/- 4cm without any activity, so it's unreliable.
-  // May be when water level will be higher than on the bottom of the pit, it'll be possible to determine better.
-  return false;
+  return acpump.currentlyOn;
 }
 
 int getVoltage(int pin) {

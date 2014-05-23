@@ -8,7 +8,13 @@
 #define SELFTEST_TIME_LIMIT 20
 // Number of AC pump cycles to wait to do another self test
 #define SELFTEST_AC_CYCLES 30
+// Minimum number of seconds between self tests
+#define SELFTEST_TIME_BETWEEN 86400 // 3600 * 24 hours
 
+// Pressure sensor related data
+#define PRESSURE_SENSOR_PIN A0
+#define AC_PUMP_ON_THRESHOLD 520 // reading of higher than this means pump is ON
+#define ALERT_PRESSURE_LEVEL 600 // reading of higher than this might indicate clogged pipe and needs to trigger an alarm
 
 // DC pump interface pins
 #define BATTERY_VOLTAGE_PIN A3
@@ -25,9 +31,35 @@ enum alertReason {
   DischargedBattery,
   DcPumpActivated, // When DC pump activated automatically, usually indicating AC pump failure
   DcPumpMalfunction, // When self test is not passing (due to weak battery or not enough pumped height)
+  HighPressure, // When pressure in the pipe gets over certain limit
   ExternallyForced // When external command to sound alert arrives
 };
 
+// HC-SR04 related data
+struct Range {
+  // Time last reading was taken
+  unsigned long timeTaken;
+  // Distance to water as measured by the sensor
+  int distance;
+  // Observed water level highs and lows, to determine AC pump cycles
+  int highs[2];
+  int lows[2];
+};
+
+// Pressure sensor and AC pump data
+struct AcPump {
+  // Number of seconds pump was ON (just a counter)
+  unsigned long onSeconds;
+  // Number of on/off cycles
+  unsigned int onCycles;
+  // Last observed pressure
+  int lastPressure;
+  // Last switch ON time
+  unsigned long switchOnTime;
+  // Current state
+  boolean currentlyOn;
+};
+ 
 // DC Pump self-test related data
 struct Selftest {
   // Time last self test was ran
