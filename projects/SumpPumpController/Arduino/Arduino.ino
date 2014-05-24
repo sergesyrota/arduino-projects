@@ -49,7 +49,7 @@ void loop()
       net.sendResponse(buf);
     } else if (net.assertCommand("getAcPumpOnTime")) {
       if (acpump.currentlyOn) {
-        sprintf(buf, "%d", acpump.onSeconds + (millis() - acpump.switchOnTime));
+        sprintf(buf, "%d", acpump.onSeconds + (now() - acpump.switchOnTime));
       } else {
         sprintf(buf, "%d", acpump.onSeconds);
       }
