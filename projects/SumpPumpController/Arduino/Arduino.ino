@@ -58,8 +58,12 @@ void loop()
       sendSelfTestResponse();
     } else if (net.assertCommand("forceAlert")) {
       raiseAlert(ExternallyForced, "Force command");
+      net.sendResponse("OK");
     } else if (net.assertCommand("resetAlert")) {
       resetAlert(alert.reason);
+      net.sendResponse("OK");
+    } else if (net.assertCommand("startSelfTest")) {
+      dcSelfTestStart();
       net.sendResponse("OK");
     } else if (net.assertCommand("debug")) {
       sendDebugResponse();
@@ -102,6 +106,8 @@ void loop()
 
 void sendDebugResponse()
 {
+  sprintf(buf, "time=%lu", now());
+  net.responseSendPart(buf);
   sprintf(buf, "rangeLH[0]=%d,%d", range.lows[0], range.highs[0]);
   net.responseSendPart(buf);
   sprintf(buf, "&rangeLH[1]=%d,%d", range.lows[1], range.highs[1]);
@@ -122,15 +128,13 @@ void sendDebugResponse()
 //  net.responseSendPart(buf);
 //  sprintf(buf, );
 //  net.responseSendPart(buf);
-//  sprintf(buf, );
-//  net.responseSendPart(buf);
   
   net.responseEnd();
 }
 
 void sendSelfTestResponse()
 {
-   sprintf(buf, "timeSince=%d&", (unsigned long)(now() - selftest.lastTestTime));
+   sprintf(buf, "timeSince=%lu&", (now() - selftest.lastTestTime));
    net.responseSendPart(buf);
    sprintf(buf, "cyclesSince=%d&", acpump.onCycles-selftest.acCycles);
    net.responseSendPart(buf);
@@ -164,12 +168,17 @@ void checkDcSelfTestStart()
     range.distance > -55 // And just in case, hard code known distance at which we are reasonably sure there is enough water in the sump
   ) {
     // All self test conditions are met. Begin the test
-    digitalWrite(DC_PUMP_TRIGGER_PIN, HIGH);
-    selftest.lastTestTime = now();
-    selftest.acCycles = acpump.onCycles;
-    selftest.startingHeight = range.distance;
-    selftest.nowActive = true;
+    dcSelfTestStart();
   }
+}
+
+void dcSelfTestStart()
+{
+  digitalWrite(DC_PUMP_TRIGGER_PIN, HIGH);
+  selftest.lastTestTime = now();
+  selftest.acCycles = acpump.onCycles;
+  selftest.startingHeight = range.distance;
+  selftest.nowActive = true;
 }
 
 void checkDcSelfTestProgress() {
@@ -184,13 +193,14 @@ void checkDcSelfTestProgress() {
 //  if (selftest.batteryVoltageMv > currentVoltage) {
 //    selftest.batteryVoltageMv = currentVoltage;
 //  }
-  // Check for conditions to stop the test
-  int currentDistance = readDistance();
   // Only time limit will stop the test at this point
   if (now() - selftest.lastTestTime > SELFTEST_TIME_LIMIT) {
     digitalWrite(DC_PUMP_TRIGGER_PIN, LOW);
     selftest.nowActive = false;
-    selftest.endingHeight = currentDistance;
+    // When DC pump is working, it might give trouble to distance sensor, so reading after it's off.
+    // Give 50ms to settle down
+    delay(50);
+    selftest.endingHeight = readDistance();
     selftest.testLength = now() - selftest.lastTestTime;
     selftest.batteryVoltageMv = getVoltage( BATTERY_VOLTAGE_PIN );
     
@@ -237,7 +247,8 @@ unsigned int readDcPumpVoltage()
 {
   unsigned int mv = getVoltage( DC_PUMP_VOLTAGE_PIN );
   // If voltage is more than 0, then pump is on, and we need to sound an alert
-  if (mv > 1000) {
+  // Need to make sure to wait a few seconds after self test to see if DC pump is ON
+  if (mv > 9000 && (now() - selftest.lastTestTime) > 5) {
     raiseAlert(DcPumpActivated, "DC Pump ON");
   }
   // We will not deactivate alarm when pump will be off. It needs to be reset manually.
@@ -260,25 +271,14 @@ unsigned int readDistance()
   range.timeTaken = now();
   range.distance = -ultrasonic.Ranging(CM);
   
-  // Record highs and lows of water level observed
-  // If current reading is more than 7cm lower than max, assume AC pump was ON, and we need to switch to the next index
-  if ((range.highs[1] - range.distance) > 7) {
-    // 0 index stores previous readings
-    range.highs[0] = range.highs[1];
-    range.lows[0] = range.lows[1];
-    // 1 index stores currently observed readings so far
-    range.highs[1] = range.distance;
-    range.lows[1] = range.distance;
-    // Increment AC pump cycles
-    acpump.onCycles++;
-  }
+  // Update observed highs and lows
   if (range.distance > range.highs[1]) {
     range.highs[1] = range.distance;
   }
   if (range.distance < range.lows[1]) {
     range.lows[1] = range.distance;
   }
-  
+      
   if (range.distance > ALERT_WATER_LEVEL) {
     raiseAlert(WaterLevel, "Water level");
   } else {
@@ -314,6 +314,16 @@ int readPressure()
       // If we went from ON to OFF - need to record how long the pump was ON, and count cycles
       acpump.onCycles++;
       acpump.onSeconds += now() - acpump.switchOnTime;
+      
+      // Record highs and lows of water level observed
+      readDistance();
+      // 0 index stores previous readings
+      range.highs[0] = range.highs[1];
+      range.lows[0] = range.lows[1];
+      // 1 index stores currently observed readings so far
+      range.highs[1] = range.distance;
+      range.lows[1] = range.distance;
+      
     }
     acpump.currentlyOn = currentlyOn;
   }

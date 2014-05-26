@@ -9,7 +9,7 @@
 // Number of AC pump cycles to wait to do another self test
 #define SELFTEST_AC_CYCLES 30
 // Minimum number of seconds between self tests
-#define SELFTEST_TIME_BETWEEN 86400 // 3600 * 24 hours
+#define SELFTEST_TIME_BETWEEN 86400UL // 3600 * 24 hours
 
 // Pressure sensor related data
 #define PRESSURE_SENSOR_PIN A0
