@@ -5118,7 +5118,7 @@ type 0309, grid 2.5 mm</description>
 <parts>
 <part name="U1" library="serge" deviceset="AD8293G***ARJZ-R7CT-ND" device=""/>
 <part name="C1" library="adafruit" deviceset="C-US" device="025-024X044" value="1.5nF"/>
-<part name="C2" library="adafruit" deviceset="C-US" device="050-024X044" value="39nF"/>
+<part name="C2" library="adafruit" deviceset="C-US" device="050-024X044" value="0.47uF"/>
 <part name="C3" library="adafruit" deviceset="C-US" device="050-024X044" value="0.1uF"/>
 <part name="CN1" library="adafruit" deviceset="1X4" device="-BIG"/>
 <part name="P+1" library="supply1" deviceset="V+" device=""/>
@@ -5133,6 +5133,7 @@ type 0309, grid 2.5 mm</description>
 <part name="P+4" library="supply1" deviceset="V+" device=""/>
 <part name="R1" library="adafruit" deviceset="R-US_" device="R0603" value="2k"/>
 <part name="R2" library="adafruit" deviceset="R-US_" device="R0603" value="2k"/>
+<part name="R3" library="adafruit" deviceset="R-US_" device="R0603" value="22k"/>
 </parts>
 <sheets>
 <sheet>
@@ -5141,7 +5142,7 @@ type 0309, grid 2.5 mm</description>
 <instances>
 <instance part="U1" gate="G$1" x="12.7" y="20.32"/>
 <instance part="C1" gate="G$1" x="-5.08" y="17.78" rot="R180"/>
-<instance part="C2" gate="G$1" x="30.48" y="5.08" rot="R180"/>
+<instance part="C2" gate="G$1" x="43.18" y="5.08" rot="R180"/>
 <instance part="C3" gate="G$1" x="27.94" y="38.1" rot="R270"/>
 <instance part="CN1" gate="G$1" x="-30.48" y="15.24" rot="R180"/>
 <instance part="P+1" gate="1" x="53.34" y="40.64"/>
@@ -5156,6 +5157,7 @@ type 0309, grid 2.5 mm</description>
 <instance part="P+4" gate="1" x="0" y="-2.54" rot="R90"/>
 <instance part="R1" gate="G$1" x="10.16" y="-2.54"/>
 <instance part="R2" gate="G$1" x="25.4" y="-2.54"/>
+<instance part="R3" gate="G$1" x="33.02" y="20.32"/>
 </instances>
 <busses>
 </busses>
@@ -5179,12 +5181,12 @@ type 0309, grid 2.5 mm</description>
 <net name="N$4" class="0">
 <segment>
 <pinref part="C2" gate="G$1" pin="2"/>
-<wire x1="30.48" y1="10.16" x2="30.48" y2="20.32" width="0.1524" layer="91"/>
-<pinref part="U1" gate="G$1" pin="ADC-OUT"/>
-<wire x1="30.48" y1="20.32" x2="25.4" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="43.18" y1="10.16" x2="43.18" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="SIGNAL" gate="G$1" pin="P"/>
-<wire x1="71.12" y1="20.32" x2="30.48" y2="20.32" width="0.1524" layer="91"/>
-<junction x="30.48" y="20.32"/>
+<wire x1="71.12" y1="20.32" x2="43.18" y2="20.32" width="0.1524" layer="91"/>
+<pinref part="R3" gate="G$1" pin="2"/>
+<wire x1="43.18" y1="20.32" x2="38.1" y2="20.32" width="0.1524" layer="91"/>
+<junction x="43.18" y="20.32"/>
 </segment>
 </net>
 <net name="GND" class="0">
@@ -5196,13 +5198,14 @@ type 0309, grid 2.5 mm</description>
 <pinref part="U1" gate="G$1" pin="-V"/>
 <wire x1="12.7" y1="5.08" x2="12.7" y2="2.54" width="0.1524" layer="91"/>
 <pinref part="C2" gate="G$1" pin="1"/>
-<wire x1="12.7" y1="2.54" x2="30.48" y2="2.54" width="0.1524" layer="91"/>
-<wire x1="30.48" y1="2.54" x2="66.04" y2="2.54" width="0.1524" layer="91"/>
-<junction x="30.48" y="2.54"/>
+<wire x1="12.7" y1="2.54" x2="43.18" y2="2.54" width="0.1524" layer="91"/>
+<wire x1="43.18" y1="2.54" x2="66.04" y2="2.54" width="0.1524" layer="91"/>
+<junction x="43.18" y="2.54"/>
 <pinref part="R2" gate="G$1" pin="2"/>
-<wire x1="30.48" y1="2.54" x2="30.48" y2="-2.54" width="0.1524" layer="91"/>
 <wire x1="30.48" y1="-2.54" x2="30.48" y2="-5.08" width="0.1524" layer="91"/>
 <junction x="30.48" y="-2.54"/>
+<wire x1="30.48" y1="-2.54" x2="43.18" y2="-2.54" width="0.1524" layer="91"/>
+<wire x1="43.18" y1="-2.54" x2="43.18" y2="2.54" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="C3" gate="G$1" pin="1"/>
@@ -5271,6 +5274,13 @@ type 0309, grid 2.5 mm</description>
 <wire x1="17.78" y1="-2.54" x2="15.24" y2="-2.54" width="0.1524" layer="91"/>
 <wire x1="17.78" y1="10.16" x2="17.78" y2="-2.54" width="0.1524" layer="91"/>
 <junction x="17.78" y="-2.54"/>
+</segment>
+</net>
+<net name="N$8" class="0">
+<segment>
+<pinref part="R3" gate="G$1" pin="1"/>
+<pinref part="U1" gate="G$1" pin="ADC-OUT"/>
+<wire x1="27.94" y1="20.32" x2="25.4" y2="20.32" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>

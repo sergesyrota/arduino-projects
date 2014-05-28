@@ -118,8 +118,8 @@ void sendDebugResponse()
   net.responseSendPart(buf);
   sprintf(buf, "&AcPumpCycles=%d", acpump.onCycles);
   net.responseSendPart(buf);
-//  sprintf(buf, );
-//  net.responseSendPart(buf);
+  sprintf(buf, "&lastAlertTime=%lu", alert.timeTriggered);
+  net.responseSendPart(buf);
 //  sprintf(buf, );
 //  net.responseSendPart(buf);
 //  sprintf(buf, );
@@ -248,7 +248,7 @@ unsigned int readDcPumpVoltage()
   unsigned int mv = getVoltage( DC_PUMP_VOLTAGE_PIN );
   // If voltage is more than 0, then pump is on, and we need to sound an alert
   // Need to make sure to wait a few seconds after self test to see if DC pump is ON
-  if (mv > 9000 && (now() - selftest.lastTestTime) > 5) {
+  if (mv > 9000 && (now() - selftest.lastTestTime) > (SELFTEST_TIME_LIMIT + 6)) {
     raiseAlert(DcPumpActivated, "DC Pump ON");
   }
   // We will not deactivate alarm when pump will be off. It needs to be reset manually.
