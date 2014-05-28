@@ -643,6 +643,12 @@
 <sheets>
 <sheet>
 <plain>
+<text x="71.12" y="35.56" size="1.778" layer="91">blue/white
+orange/white
+orange
+green/white
+green
+brown pair</text>
 </plain>
 <instances>
 <instance part="VALVE" gate="G$1" x="15.24" y="53.34"/>
@@ -728,4 +734,10 @@
 </sheets>
 </schematic>
 </drawing>
+<compatibility>
+<note version="6.3" minversion="6.2.2" severity="warning">
+Since Version 6.2.2 text objects can contain more than one line,
+which will not be processed correctly with this version.
+</note>
+</compatibility>
 </eagle>
