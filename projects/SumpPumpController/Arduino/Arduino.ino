@@ -328,6 +328,15 @@ int readPressure()
     acpump.currentlyOn = currentlyOn;
   }
   
+  // Check if AC pump was on for too long
+  if (currentlyOn) {
+    if ((now() - acpump.switchOnTime) > AC_PUMP_ON_TIME_WARNING) {
+      raiseAlert(AcPumpOverload, "AC pump ON for too long");
+    } else {
+      resetAlert(AcPumpOverload);
+    }
+  }
+  
   return acpump.lastPressure;
 }
 

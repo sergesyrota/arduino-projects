@@ -15,6 +15,7 @@
 #define PRESSURE_SENSOR_PIN A0
 #define AC_PUMP_ON_THRESHOLD 520 // reading of higher than this means pump is ON
 #define ALERT_PRESSURE_LEVEL 600 // reading of higher than this might indicate clogged pipe and needs to trigger an alarm
+#define AC_PUMP_ON_TIME_WARNING 30 // number of seconds AC pump can be on at a time before warning
 
 // DC pump interface pins
 #define BATTERY_VOLTAGE_PIN A3
@@ -32,6 +33,7 @@ enum alertReason {
   DcPumpActivated, // When DC pump activated automatically, usually indicating AC pump failure
   DcPumpMalfunction, // When self test is not passing (due to weak battery or not enough pumped height)
   HighPressure, // When pressure in the pipe gets over certain limit
+  AcPumpOverload, // When AC pump runs for extended period of time
   ExternallyForced // When external command to sound alert arrives
 };
 
