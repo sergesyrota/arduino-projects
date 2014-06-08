@@ -19,7 +19,7 @@ void setup()
 {
   // Set device ID
   strcpy(net.deviceID, "SumpPump");
-  Serial.begin(9600);
+  Serial.begin(14400);
   pinMode(BATTERY_VOLTAGE_PIN, INPUT);
   pinMode(DC_PUMP_VOLTAGE_PIN, INPUT);
   pinMode(BUZZ_PIN, OUTPUT);
