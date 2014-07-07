@@ -12,9 +12,9 @@ DEBUG = -g
 LFLAGS = -Wall $(DEBUG)
 CFLAGS = -Wall -c
 
-SOURCES = TestRunner.cpp WaterMeterCounter.cpp
+SOURCES = TestRunner.cpp ../WaterMeterCounter.cpp
 
-HEADERS = WaterMeterCounter.h \
+HEADERS = ../WaterMeterCounter.h \
 	TestWaterMeterCounter.h
 
 OBJ = $(SOURCES:.cpp=.o)

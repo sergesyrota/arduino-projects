@@ -12,7 +12,7 @@
 #include <cppunit/TestSuite.h>
 #include <cppunit/TestCase.h>
 
-#include "WaterMeterCounter.h"
+#include "../WaterMeterCounter.h"
 
 using namespace std;
 
