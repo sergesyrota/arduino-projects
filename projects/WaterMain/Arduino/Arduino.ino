@@ -1,36 +1,30 @@
-#define SENSOR_PIN A0
-#define HIGH_ZONE 522
-#define LOW_ZONE 502
+#include "WaterMeterCounter.h"
+#include "SyrotaAutomation1.h"
 
-int currentState;
-unsigned long counter = 0;
+#define SENSOR_PIN A0
+
+WaterMeterCounter meter = WaterMeterCounter();
+SyrotaAutomation net = SyrotaAutomation(2);
+
+// Buffer for char conversions
+char buf [40];
 
 void setup()
 {
-  Serial.begin(9600);
+  strcpy(net.deviceID, "WtrMn");
+  Serial.begin(14400);
 }
 
 void loop()
 {
-  readMagnet();
+  if (net.messageReceived()) {
+    if (net.assertCommand("getCount")) {
+      sprintf(buf, "%d", meter.getCounter());
+      net.sendResponse(buf);
+    } else {
+      net.sendResponse("Unrecognized command");
+    }
+  }
+  meter.reading(analogRead(SENSOR_PIN));
 }
 
-void readMagnet()
-{
-  int field = analogRead(SENSOR_PIN);
-  int state;
-  // Magnetic field read is split in 3 zones: definite LOW, unknown (e.g. maintain), and definite HIGH
-  if (field >= HIGH_ZONE) {
-    state = HIGH;
-  } else if (field <= LOW_ZONE) {
-    state = LOW;
-  } else {
-    // Nothing changed, so we can exit
-    return;
-  }
-  // If we've changed states, need to increment the counter
-  if (state != currentState) {
-    counter++;
-    currentState = state;
-  }
-}
