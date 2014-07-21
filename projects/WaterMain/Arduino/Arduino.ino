@@ -1,7 +1,6 @@
 #include "WaterMeterCounter.h"
 #include "SyrotaAutomation1.h"
-
-#define SENSOR_PIN A0
+#include "config.h"
 
 WaterMeterCounter meter = WaterMeterCounter();
 SyrotaAutomation net = SyrotaAutomation(2);
@@ -25,6 +24,6 @@ void loop()
       net.sendResponse("Unrecognized command");
     }
   }
-  meter.reading(analogRead(SENSOR_PIN));
+  meter.reading(analogRead(METER_SENSOR_PIN));
 }
 
