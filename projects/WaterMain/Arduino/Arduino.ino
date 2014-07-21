@@ -10,6 +10,11 @@ char buf [40];
 
 void setup()
 {
+  pinMode(VALVE_CLOSE_PIN, OUTPUT);
+  pinMode(VALVE_OPEN_PIN, OUTPUT);
+  digitalWrite(VALVE_CLOSE_PIN, LOW);
+  digitalWrite(VALVE_OPEN_PIN, LOW);
+  
   strcpy(net.deviceID, "WtrMn");
   Serial.begin(14400);
 }
