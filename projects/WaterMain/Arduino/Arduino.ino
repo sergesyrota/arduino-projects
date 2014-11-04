@@ -1,3 +1,4 @@
+#include <dht11.h>
 #include "WaterMeterCounter.h"
 #include "SyrotaAutomation1.h"
 #include "config.h"
@@ -10,6 +11,9 @@ char buf [40];
 
 // Indicates if one of valve commands was sent and at what time (millis)
 unsigned long valveCommandTime = 0L;
+// DHT-11 data and lib
+TempSensorData dhtData;
+dht11 tempSensor;
 
 void setup()
 {
@@ -17,7 +21,7 @@ void setup()
   pinMode(VALVE_OPEN_PIN, OUTPUT);
   digitalWrite(VALVE_CLOSE_PIN, LOW);
   digitalWrite(VALVE_OPEN_PIN, LOW);
-  
+  readTemp();
   strcpy(net.deviceID, "WtrMn");
   Serial.begin(14400);
 }
@@ -26,9 +30,28 @@ void loop()
 {
   if (net.messageReceived()) {
     if (net.assertCommand("getCount")) {
-      sprintf(buf, "%d", meter.getCounter());
+      sprintf(buf, "%lu", meter.getCounter());
       net.sendResponse(buf);
-    } else if (net.assertCommand("valveClose")) {
+    } else if (net.assertCommand("getTemp")) {
+//      int chk = tempSensor.read(9);
+//      sprintf(buf, "%d, %d, %d", chk, tempSensor.temperature, tempSensor.humidity);
+//      net.sendResponse(buf);
+      if (dhtData.chk == DHTLIB_OK) {
+        sprintf(buf, "%d", dhtData.temp);
+        net.sendResponse(buf);
+      } else{
+        sprintf(buf, "ERROR: %d", dhtData.chk);
+        net.sendResponse(buf);
+      }
+    } else if (net.assertCommand("getHumidity")) {
+      if (dhtData.chk == DHTLIB_OK) {
+        sprintf(buf, "%d", dhtData.humidity);
+        net.sendResponse(buf);
+      } else{
+        sprintf(buf, "ERROR: %d", dhtData.chk);
+        net.sendResponse(buf);
+      }
+    }  else if (net.assertCommand("valveClose")) {
       valveClose();
       net.sendResponse("OK");
     } else if (net.assertCommand("valveOpen")) {
@@ -40,6 +63,24 @@ void loop()
   }
   valveCheck();
   meter.reading(analogRead(METER_SENSOR_PIN));
+  if (millis() - dhtData.lastReadTime > TEMP_READ_INTERVAL) {
+    readTemp();
+  }
+}
+
+void readTemp()
+{
+  dhtData.chk = tempSensor.read(TEMP_SENSOR_PIN);
+  switch (dhtData.chk) {
+    case DHTLIB_OK:
+      dhtData.temp = tempSensor.temperature;
+      dhtData.humidity = tempSensor.humidity;
+      break;
+    default:
+      dhtData.temp = -1;
+      dhtData.humidity = -1;
+  }
+  dhtData.lastReadTime = millis();
 }
 
 // Sends a command on the open pin
