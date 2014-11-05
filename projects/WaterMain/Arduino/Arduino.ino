@@ -33,24 +33,9 @@ void loop()
       sprintf(buf, "%lu", meter.getCounter());
       net.sendResponse(buf);
     } else if (net.assertCommand("getTemp")) {
-//      int chk = tempSensor.read(9);
-//      sprintf(buf, "%d, %d, %d", chk, tempSensor.temperature, tempSensor.humidity);
-//      net.sendResponse(buf);
-      if (dhtData.chk == DHTLIB_OK) {
-        sprintf(buf, "%d", dhtData.temp);
-        net.sendResponse(buf);
-      } else{
-        sprintf(buf, "ERROR: %d", dhtData.chk);
-        net.sendResponse(buf);
-      }
+      sendClimateResponse(dhtData.temp);
     } else if (net.assertCommand("getHumidity")) {
-      if (dhtData.chk == DHTLIB_OK) {
-        sprintf(buf, "%d", dhtData.humidity);
-        net.sendResponse(buf);
-      } else{
-        sprintf(buf, "ERROR: %d", dhtData.chk);
-        net.sendResponse(buf);
-      }
+      sendClimateResponse(dhtData.humidity);
     }  else if (net.assertCommand("valveClose")) {
       valveClose();
       net.sendResponse("OK");
@@ -65,6 +50,17 @@ void loop()
   meter.reading(analogRead(METER_SENSOR_PIN));
   if (millis() - dhtData.lastReadTime > TEMP_READ_INTERVAL) {
     readTemp();
+  }
+}
+
+void sendClimateResponse(int data)
+{
+  if (dhtData.chk == DHTLIB_OK) {
+    sprintf(buf, "%d", data);
+    net.sendResponse(buf);
+  } else{
+    sprintf(buf, "ERROR: %d", dhtData.chk);
+    net.sendResponse(buf);
   }
 }
 
