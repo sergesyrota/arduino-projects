@@ -433,61 +433,6 @@ Source: avr.lbr</description>
 </deviceset>
 </devicesets>
 </library>
-<library name="serge">
-<packages>
-<package name="ICSP-HEADER">
-<pad name="MISO" x="-1.27" y="1.27" drill="0.8" shape="square"/>
-<pad name="VCC" x="1.27" y="1.27" drill="0.8" shape="octagon"/>
-<pad name="MOSI" x="1.27" y="-1.27" drill="0.8" shape="octagon"/>
-<pad name="SCK" x="-1.27" y="-1.27" drill="0.8" shape="octagon"/>
-<pad name="RESET" x="-1.27" y="-3.81" drill="0.8" shape="octagon"/>
-<pad name="GND" x="1.27" y="-3.81" drill="0.8" shape="octagon"/>
-<wire x1="-2.54" y1="2.54" x2="-2.54" y2="-5.08" width="0.127" layer="21"/>
-<wire x1="-2.54" y1="-5.08" x2="2.54" y2="-5.08" width="0.127" layer="21"/>
-<wire x1="2.54" y1="-5.08" x2="2.54" y2="2.54" width="0.127" layer="21"/>
-<wire x1="2.54" y1="2.54" x2="-2.54" y2="2.54" width="0.127" layer="21"/>
-<circle x="-2.159" y="2.159" radius="0.127" width="0.254" layer="21"/>
-</package>
-</packages>
-<symbols>
-<symbol name="ICSP-HEADER">
-<pin name="+5V" x="-7.62" y="0" visible="pad" length="middle"/>
-<pin name="GND" x="-7.62" y="-2.54" visible="pad" length="middle"/>
-<pin name="RESET" x="-7.62" y="2.54" visible="pad" length="middle"/>
-<pin name="MOSI" x="7.62" y="-2.54" visible="pad" length="middle" rot="R180"/>
-<pin name="MISO" x="7.62" y="0" visible="pad" length="middle" rot="R180"/>
-<pin name="SCK" x="7.62" y="2.54" visible="pad" length="middle" rot="R180"/>
-<wire x1="-2.54" y1="5.08" x2="-2.54" y2="-5.08" width="0.254" layer="94"/>
-<wire x1="-2.54" y1="-5.08" x2="2.54" y2="-5.08" width="0.254" layer="94"/>
-<wire x1="2.54" y1="-5.08" x2="2.54" y2="5.08" width="0.254" layer="94"/>
-<wire x1="2.54" y1="5.08" x2="-2.54" y2="5.08" width="0.254" layer="94"/>
-<text x="-3.81" y="5.842" size="1.778" layer="95">&gt;NAME</text>
-<text x="-2.54" y="-7.62" size="1.778" layer="96">ICSP</text>
-</symbol>
-</symbols>
-<devicesets>
-<deviceset name="ICSP-HEADER" prefix="CON">
-<gates>
-<gate name="G$1" symbol="ICSP-HEADER" x="0" y="0"/>
-</gates>
-<devices>
-<device name="" package="ICSP-HEADER">
-<connects>
-<connect gate="G$1" pin="+5V" pad="VCC"/>
-<connect gate="G$1" pin="GND" pad="GND"/>
-<connect gate="G$1" pin="MISO" pad="MISO"/>
-<connect gate="G$1" pin="MOSI" pad="MOSI"/>
-<connect gate="G$1" pin="RESET" pad="RESET"/>
-<connect gate="G$1" pin="SCK" pad="SCK"/>
-</connects>
-<technologies>
-<technology name=""/>
-</technologies>
-</device>
-</devices>
-</deviceset>
-</devicesets>
-</library>
 <library name="adafruit">
 <packages>
 <package name="C0402">
@@ -5327,6 +5272,61 @@ Source: www.ecsxtal.com .. Crystal 3.6864MHz CSM_7X_DU.PDF</description>
 </deviceset>
 </devicesets>
 </library>
+<library name="serge">
+<packages>
+<package name="ICSP-HEADER">
+<pad name="MISO" x="-1.27" y="1.27" drill="1.1" shape="square"/>
+<pad name="VCC" x="1.27" y="1.27" drill="1.1" shape="octagon"/>
+<pad name="MOSI" x="1.27" y="-1.27" drill="1.1" shape="octagon"/>
+<pad name="SCK" x="-1.27" y="-1.27" drill="1.1" shape="octagon"/>
+<pad name="RESET" x="-1.27" y="-3.81" drill="1.1" shape="octagon"/>
+<pad name="GND" x="1.27" y="-3.81" drill="1.1" shape="octagon"/>
+<wire x1="-2.54" y1="2.54" x2="-2.54" y2="-5.08" width="0.127" layer="21"/>
+<wire x1="-2.54" y1="-5.08" x2="2.54" y2="-5.08" width="0.127" layer="21"/>
+<wire x1="2.54" y1="-5.08" x2="2.54" y2="2.54" width="0.127" layer="21"/>
+<wire x1="2.54" y1="2.54" x2="-2.54" y2="2.54" width="0.127" layer="21"/>
+<circle x="-2.159" y="2.159" radius="0.127" width="0.254" layer="21"/>
+</package>
+</packages>
+<symbols>
+<symbol name="ICSP-HEADER">
+<pin name="+5V" x="-7.62" y="0" visible="pad" length="middle"/>
+<pin name="GND" x="-7.62" y="-2.54" visible="pad" length="middle"/>
+<pin name="RESET" x="-7.62" y="2.54" visible="pad" length="middle"/>
+<pin name="MOSI" x="7.62" y="-2.54" visible="pad" length="middle" rot="R180"/>
+<pin name="MISO" x="7.62" y="0" visible="pad" length="middle" rot="R180"/>
+<pin name="SCK" x="7.62" y="2.54" visible="pad" length="middle" rot="R180"/>
+<wire x1="-2.54" y1="5.08" x2="-2.54" y2="-5.08" width="0.254" layer="94"/>
+<wire x1="-2.54" y1="-5.08" x2="2.54" y2="-5.08" width="0.254" layer="94"/>
+<wire x1="2.54" y1="-5.08" x2="2.54" y2="5.08" width="0.254" layer="94"/>
+<wire x1="2.54" y1="5.08" x2="-2.54" y2="5.08" width="0.254" layer="94"/>
+<text x="-3.81" y="5.842" size="1.778" layer="95">&gt;NAME</text>
+<text x="-2.54" y="-7.62" size="1.778" layer="96">ICSP</text>
+</symbol>
+</symbols>
+<devicesets>
+<deviceset name="ICSP-HEADER" prefix="CON">
+<gates>
+<gate name="G$1" symbol="ICSP-HEADER" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="ICSP-HEADER">
+<connects>
+<connect gate="G$1" pin="+5V" pad="VCC"/>
+<connect gate="G$1" pin="GND" pad="GND"/>
+<connect gate="G$1" pin="MISO" pad="MISO"/>
+<connect gate="G$1" pin="MOSI" pad="MOSI"/>
+<connect gate="G$1" pin="RESET" pad="RESET"/>
+<connect gate="G$1" pin="SCK" pad="SCK"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+</devicesets>
+</library>
 </libraries>
 <attributes>
 </attributes>
@@ -5338,7 +5338,6 @@ Source: www.ecsxtal.com .. Crystal 3.6864MHz CSM_7X_DU.PDF</description>
 </classes>
 <parts>
 <part name="IC1" library="atmel" deviceset="MEGA8" device="-AI"/>
-<part name="CON1" library="serge" deviceset="ICSP-HEADER" device=""/>
 <part name="R1" library="adafruit" deviceset="R-US_" device="R0603" value="1k"/>
 <part name="R2" library="adafruit" deviceset="R-US_" device="R0603" value="1k"/>
 <part name="P+1" library="supply1" deviceset="VCC" device=""/>
@@ -5352,6 +5351,7 @@ Source: www.ecsxtal.com .. Crystal 3.6864MHz CSM_7X_DU.PDF</description>
 <part name="C4" library="adafruit" deviceset="C-US" device="C0603K" value="100nF"/>
 <part name="JP1" library="adafruit" deviceset="PINHD-1X6" device="B"/>
 <part name="JP2" library="adafruit" deviceset="PINHD-1X8" device="BIG"/>
+<part name="CON1" library="serge" deviceset="ICSP-HEADER" device=""/>
 </parts>
 <sheets>
 <sheet>
@@ -5359,7 +5359,6 @@ Source: www.ecsxtal.com .. Crystal 3.6864MHz CSM_7X_DU.PDF</description>
 </plain>
 <instances>
 <instance part="IC1" gate="G$1" x="35.56" y="53.34"/>
-<instance part="CON1" gate="G$1" x="38.1" y="-5.08"/>
 <instance part="R1" gate="G$1" x="81.28" y="53.34"/>
 <instance part="R2" gate="G$1" x="71.12" y="55.88"/>
 <instance part="P+1" gate="VCC" x="5.08" y="-5.08" rot="R90"/>
@@ -5373,6 +5372,7 @@ Source: www.ecsxtal.com .. Crystal 3.6864MHz CSM_7X_DU.PDF</description>
 <instance part="C4" gate="G$1" x="7.62" y="71.12" rot="R90"/>
 <instance part="JP1" gate="A" x="93.98" y="33.02"/>
 <instance part="JP2" gate="G$1" x="93.98" y="60.96"/>
+<instance part="CON1" gate="G$1" x="38.1" y="-5.08"/>
 </instances>
 <busses>
 </busses>
@@ -5406,7 +5406,6 @@ Source: www.ecsxtal.com .. Crystal 3.6864MHz CSM_7X_DU.PDF</description>
 <pinref part="C4" gate="G$1" pin="1"/>
 </segment>
 <segment>
-<pinref part="CON1" gate="G$1" pin="GND"/>
 <pinref part="GND1" gate="1" pin="GND"/>
 <wire x1="30.48" y1="-7.62" x2="22.86" y2="-7.62" width="0.1524" layer="91"/>
 <wire x1="22.86" y1="-7.62" x2="22.86" y2="-12.7" width="0.1524" layer="91"/>
@@ -5414,6 +5413,7 @@ Source: www.ecsxtal.com .. Crystal 3.6864MHz CSM_7X_DU.PDF</description>
 <wire x1="17.78" y1="-12.7" x2="22.86" y2="-12.7" width="0.1524" layer="91"/>
 <junction x="22.86" y="-12.7"/>
 <pinref part="C1" gate="G$1" pin="2"/>
+<pinref part="CON1" gate="G$1" pin="GND"/>
 </segment>
 </net>
 <net name="N$1" class="0">
@@ -5452,21 +5452,21 @@ Source: www.ecsxtal.com .. Crystal 3.6864MHz CSM_7X_DU.PDF</description>
 <junction x="10.16" y="43.18"/>
 </segment>
 <segment>
-<pinref part="CON1" gate="G$1" pin="+5V"/>
 <pinref part="P+1" gate="VCC" pin="VCC"/>
 <wire x1="30.48" y1="-5.08" x2="17.78" y2="-5.08" width="0.1524" layer="91"/>
 <pinref part="C1" gate="G$1" pin="1"/>
 <wire x1="17.78" y1="-5.08" x2="7.62" y2="-5.08" width="0.1524" layer="91"/>
 <junction x="17.78" y="-5.08"/>
+<pinref part="CON1" gate="G$1" pin="+5V"/>
 </segment>
 </net>
 <net name="N$4" class="0">
 <segment>
-<pinref part="CON1" gate="G$1" pin="SCK"/>
 <wire x1="45.72" y1="-2.54" x2="63.5" y2="-2.54" width="0.1524" layer="91"/>
 <wire x1="63.5" y1="-2.54" x2="63.5" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="IC1" gate="G$1" pin="PB5(SCK)"/>
 <wire x1="63.5" y1="20.32" x2="60.96" y2="20.32" width="0.1524" layer="91"/>
+<pinref part="CON1" gate="G$1" pin="SCK"/>
 </segment>
 </net>
 <net name="N$5" class="0">
@@ -5474,17 +5474,17 @@ Source: www.ecsxtal.com .. Crystal 3.6864MHz CSM_7X_DU.PDF</description>
 <pinref part="IC1" gate="G$1" pin="PB4(MISO)"/>
 <wire x1="60.96" y1="22.86" x2="66.04" y2="22.86" width="0.1524" layer="91"/>
 <wire x1="66.04" y1="22.86" x2="66.04" y2="-5.08" width="0.1524" layer="91"/>
-<pinref part="CON1" gate="G$1" pin="MISO"/>
 <wire x1="66.04" y1="-5.08" x2="45.72" y2="-5.08" width="0.1524" layer="91"/>
+<pinref part="CON1" gate="G$1" pin="MISO"/>
 </segment>
 </net>
 <net name="N$6" class="0">
 <segment>
-<pinref part="CON1" gate="G$1" pin="MOSI"/>
 <wire x1="45.72" y1="-7.62" x2="68.58" y2="-7.62" width="0.1524" layer="91"/>
 <wire x1="68.58" y1="-7.62" x2="68.58" y2="25.4" width="0.1524" layer="91"/>
 <pinref part="IC1" gate="G$1" pin="PB3(MOSI/OC2)"/>
 <wire x1="68.58" y1="25.4" x2="60.96" y2="25.4" width="0.1524" layer="91"/>
+<pinref part="CON1" gate="G$1" pin="MOSI"/>
 </segment>
 </net>
 <net name="N$7" class="0">
@@ -5503,11 +5503,11 @@ Source: www.ecsxtal.com .. Crystal 3.6864MHz CSM_7X_DU.PDF</description>
 </net>
 <net name="N$12" class="0">
 <segment>
-<pinref part="CON1" gate="G$1" pin="RESET"/>
 <wire x1="30.48" y1="-2.54" x2="0" y2="-2.54" width="0.1524" layer="91"/>
 <pinref part="IC1" gate="G$1" pin="PC6(/RESET)"/>
 <wire x1="0" y1="-2.54" x2="0" y2="78.74" width="0.1524" layer="91"/>
 <wire x1="0" y1="78.74" x2="12.7" y2="78.74" width="0.1524" layer="91"/>
+<pinref part="CON1" gate="G$1" pin="RESET"/>
 </segment>
 </net>
 <net name="N$17" class="0">
