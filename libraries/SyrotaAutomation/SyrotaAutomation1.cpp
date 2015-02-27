@@ -35,11 +35,6 @@ Arduino device:
 
 SyrotaAutomation::SyrotaAutomation(int modePinNum)
 {
-  SyrotaAutomation(modePinNum, NULL);
-}
-
-SyrotaAutomation::SyrotaAutomation(int modePinNum, void(*setVarCallback)(char*, char*))
-{
   // Write down mode PIN number, so that we can switch between send and receive.
   modePin = modePinNum;
   pinMode(modePin, OUTPUT);
@@ -47,7 +42,6 @@ SyrotaAutomation::SyrotaAutomation(int modePinNum, void(*setVarCallback)(char*, 
   digitalWrite(modePin, LOW);
   // Serial port should be open by this time with needed baud rate
   responseStarted = false;
-  callback = setVarCallback;
 }
 
 boolean SyrotaAutomation::messageReceived()
@@ -79,7 +73,15 @@ boolean SyrotaAutomation::assertCommand(char *command) {
     return false;
   }
 }
-  
+
+boolean SyrotaAutomation::assertCommandStarts(char *command, char *paramString) {
+  if (strncmp(command, buffer, strlen(command)) == 0) {
+	strcpy(paramString, buffer+strlen(command));
+    return true;
+  } else {
+    return false;
+  }
+}
   
 void SyrotaAutomation::sendResponse(char *raw) {
   // starting headers will be sent automatically
