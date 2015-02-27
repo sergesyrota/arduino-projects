@@ -15,7 +15,7 @@ void setup()
   nrf24.init();
   nrf24.setChannel(1);
   nrf24.setRF(RH_NRF24::DataRate250kbps, RH_NRF24::TransmitPower0dBm);
-  dht.setup(2);
+  dht.setup(2, DHT::DHT22);
   Serial.begin(9600);
 }
 

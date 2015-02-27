@@ -24,11 +24,15 @@ void setup()
   pinMode(I2C_CONTROL_PIN1, OUTPUT);
   digitalWrite(LED1_PIN, LOW);
   strcpy(net.deviceID, "BrAcSens");
-  Serial.begin(9600);
+  Serial.begin(14400);
   
   // Set sensor addresses
   sensor[0].s0=LOW; 
   sensor[0].s1=LOW;
+  sensor[1].s0=HIGH; 
+  sensor[1].s1=LOW;
+  sensor[2].s0=LOW; 
+  sensor[2].s1=HIGH;
 }
 
 void loop()
@@ -37,16 +41,16 @@ void loop()
     if (net.assertCommand("debug")) {
       sprintf(buf, "%d deg/100 (%d ms ago); status: %d", (int)(sensor[0].temperature*100), (millis() - measureTime), sensor[0].status);
       net.sendResponse(buf);
-    } else if (net.assertCommand("getPresIntake")) {
+    } else if (net.assertCommand("getPresVacuum")) {
       dtostrf(sensor[0].pressure, 6, 2, buf);
       net.sendResponse(buf);
-    } else if (net.assertCommand("getTempIntake")) {
+    } else if (net.assertCommand("getTempVacuum")) {
       dtostrf(sensor[0].temperature, 4, 2, buf);
       net.sendResponse(buf);
-    } else if (net.assertCommand("getPresVacuum")) {
+    } else if (net.assertCommand("getPresIntake")) {
       dtostrf(sensor[1].pressure, 6, 2, buf);
       net.sendResponse(buf);
-    } else if (net.assertCommand("getTempVacuum")) {
+    } else if (net.assertCommand("getTempIntake")) {
       dtostrf(sensor[1].temperature, 4, 2, buf);
       net.sendResponse(buf);
     } else if (net.assertCommand("getPresSupply")) {
@@ -61,6 +65,8 @@ void loop()
   }
   if (millis() - measureTime > SAMPLE_INTERVAL) {
     readSensor(0);
+    readSensor(1);
+    readSensor(2);
     measureTime = millis();
   }
 }
