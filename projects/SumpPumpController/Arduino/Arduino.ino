@@ -5,7 +5,7 @@
 #include "include.h"
 
 SyrotaAutomation net = SyrotaAutomation(2);
-Ultrasonic ultrasonic(9,8); // Trig, Echo
+Ultrasonic ultrasonic(7,8); // Trig, Echo
 
 struct Range range;
 struct Selftest selftest;
@@ -19,7 +19,7 @@ void setup()
 {
   // Set device ID
   strcpy(net.deviceID, "SumpPump");
-  Serial.begin(14400);
+  Serial.begin(9600);
   pinMode(BATTERY_VOLTAGE_PIN, INPUT);
   pinMode(DC_PUMP_VOLTAGE_PIN, INPUT);
   pinMode(BUZZ_PIN, OUTPUT);
@@ -99,7 +99,8 @@ void loop()
   }
   if (alert.present && (millis() - alert.buzzerChangeTime) > BUZZ_CYCLE_TIME) {
     alert.buzzerState = alert.buzzerState ^ 1;
-    digitalWrite(BUZZ_PIN, alert.buzzerState);
+    // Disabling buzzer notifications for now
+//    digitalWrite(BUZZ_PIN, alert.buzzerState);
     alert.buzzerChangeTime = millis();
   }
 }
@@ -347,10 +348,10 @@ boolean AcPumpOn()
 }
 
 int getVoltage(int pin) {
-  // 4.7k & 1.8k resistors result in 6500 / 1700 reduction
+  // 4.7k+33k & 12k resistors result in 497/120 reduction
   // Converting from 1024 scale will be another 5/1024
   // Then multiplying by 1000 to convert to mV
-  // Putting it together: 6500/1700 * 5/1024 * 1000 = 17.632378472
-  
-  return (int)(analogRead(pin)*17.632378);  
+  // Putting it together: (497/120) * (5/1024) * 1000 = 20.222981771
+  // And then it doesn't matter, as each resistor has 10% tollerance, so have to adjust for that
+  return (int)(analogRead(pin)*20.64125563);  
 }

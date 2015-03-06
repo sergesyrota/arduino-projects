@@ -18,9 +18,9 @@
 #define AC_PUMP_ON_TIME_WARNING 30 // number of seconds AC pump can be on at a time before warning
 
 // DC pump interface pins
-#define BATTERY_VOLTAGE_PIN A3
-#define DC_PUMP_VOLTAGE_PIN A1
-#define DC_PUMP_TRIGGER_PIN 3
+#define BATTERY_VOLTAGE_PIN A7
+#define DC_PUMP_VOLTAGE_PIN A6
+#define DC_PUMP_TRIGGER_PIN 10
 
 // Alert levels
 #define ALERT_BATTERY_VOLTAGE 12000 // mV
