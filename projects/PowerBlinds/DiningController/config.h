@@ -29,7 +29,7 @@
 #define TOP_SENSOR_THRESHOLD_ADDR 5
 
 struct SensorData_t {
-  int before;
-  int after;
+  int bottom;
+  int top;
 };
 

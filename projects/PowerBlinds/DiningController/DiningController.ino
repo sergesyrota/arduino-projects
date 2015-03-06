@@ -12,6 +12,8 @@ unsigned long lastSwitchTime;
 boolean lastSwitchState;
 boolean motorRunning;
 boolean motorDirection;
+boolean motionSensorStatus;
+unsigned long lastMotionTime;
 
 // Values we store in EEPROM
 int maxMotorRuntime;
@@ -39,7 +41,7 @@ void setup()
   
   cacheEepromValues();
   strcpy(net.deviceID, NET_ADDRESS);
-  Serial.begin(14400);
+  Serial.begin(9600);
 }
 
 void loop()
@@ -60,6 +62,13 @@ void loop()
       lastSwitchTime = millis();
       motorDown();
       net.sendResponse("OK");
+    } else if (net.assertCommand("timeSinceMotion")) {
+      if (motionSensorStatus == HIGH) {
+        net.sendResponse("0");
+      } else {
+        sprintf(buf, "%d", (millis() - lastMotionTime)/1000);
+        net.sendResponse(buf);
+      }
     } else if (net.assertCommandStarts("setEeprom:", buf)) {
       // Usage: /bin/runCommand DeviceAddr setEeprom:3d0010
       // each 2 characters after : represents (in hex notation, transfered in plain text) a byte to be written to EEPROM
@@ -76,6 +85,43 @@ void loop()
     }
   }
   readSwitch();
+  readMotion();
+  if (motorRunning) {
+    checkMotorStopConditions();
+  }
+}
+
+void checkMotorStopConditions() {
+  // Just in case, limit maximum roll in one direction
+  if (millis() - lastSwitchTime > maxMotorRuntime) {
+    motorStop();
+  }
+  
+  SensorData_t led = readOptical();
+  // Limit when we sense it has reached "destination"
+  if (motorDirection == MOTOR_DIRECTION_UP) {
+    if (sensorThresholdDirection == 0 && led.top < topSensorThreshold) {
+      motorStop();
+    } else if (sensorThresholdDirection == 1 && led.top > topSensorThreshold) {
+      motorStop();
+    }
+  } else {
+    if (sensorThresholdDirection == 0 && led.bottom < bottomSensorThreshold) {
+      motorStop();
+    } else if (sensorThresholdDirection == 1 && led.bottom > bottomSensorThreshold) {
+      motorStop();
+    }
+  }
+}
+
+void readMotion()
+{
+  if (motionSensorStatus != digitalRead(MOTION_PIN)) {
+    motionSensorStatus = !motionSensorStatus;
+    if (motionSensorStatus == LOW) {
+      lastMotionTime = millis();
+    }
+  }
 }
 
 void cacheEepromValues()
@@ -90,13 +136,13 @@ void cacheEepromValues()
     EEPROM.read(TOP_SENSOR_THRESHOLD_ADDR+1);
 }
 
-SensorData_t readOptical(int pin)
+SensorData_t readOptical()
 {
   SensorData_t res;
-  res.before = analogRead(pin);
   digitalWrite(OPTICAL_SENSOR_ENABLE_PIN, HIGH);
   delay(1);
-  res.after = analogRead(pin);
+  res.bottom = analogRead(SENSOR_POSITION_BOTTOM_PIN);
+  res.top = analogRead(SENSOR_POSITION_TOP_PIN);
   digitalWrite(OPTICAL_SENSOR_ENABLE_PIN, LOW);
   return res;
 }
@@ -124,11 +170,6 @@ void readSwitch()
     }
     lastSwitchState = !lastSwitchState;
     lastSwitchTime = millis();
-  }
-  
-  // Just in case, limit maximum roll in one direction
-  if (millis() - lastSwitchTime > maxMotorRuntime) {
-    motorStop();
   }
 }
 
