@@ -1,3 +1,5 @@
+// Acknowledge button pin
+#define ACK_PIN 9
 // Pin with buzzer output for sounding an alarm
 #define BUZZ_PIN 5
 // Time the buzzer should cycle in on/off states (milliseconds)
@@ -28,13 +30,13 @@
 
 // Alert reason codes
 enum alertReason {
-  WaterLevel,
-  DischargedBattery,
-  DcPumpActivated, // When DC pump activated automatically, usually indicating AC pump failure
-  DcPumpMalfunction, // When self test is not passing (due to weak battery or not enough pumped height)
-  HighPressure, // When pressure in the pipe gets over certain limit
-  AcPumpOverload, // When AC pump runs for extended period of time
-  ExternallyForced // When external command to sound alert arrives
+  WaterLevel = 0,
+  DischargedBattery = 1,
+  DcPumpMalfunction = 2, // When self test is not passing (due to weak battery or not enough pumped height)
+  DcPumpActivated = 3, // When DC pump activated automatically, usually indicating AC pump failure
+  AcPumpOverload = 4, // When AC pump runs for extended period of time
+  HighPressure = 5, // When pressure in the pipe gets over certain limit
+  ExternallyForced = 6 // When external command to sound alert arrives
 };
 
 // HC-SR04 related data
@@ -87,6 +89,7 @@ struct Alert {
   unsigned long timeTriggered;
   // alert state
   boolean present;
+  boolean acknowledged;
   // Condition that triggered the alert
   char condition[40];
   // Buzzer state

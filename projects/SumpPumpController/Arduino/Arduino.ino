@@ -23,6 +23,7 @@ void setup()
   pinMode(BATTERY_VOLTAGE_PIN, INPUT);
   pinMode(DC_PUMP_VOLTAGE_PIN, INPUT);
   pinMode(BUZZ_PIN, OUTPUT);
+  pinMode(ACK_PIN, INPUT_PULLUP);
   pinMode(DC_PUMP_TRIGGER_PIN, OUTPUT);
   digitalWrite(DC_PUMP_TRIGGER_PIN, LOW);
   // Initialize with alert ON to make sure buzzer works
@@ -60,7 +61,7 @@ void loop()
       raiseAlert(ExternallyForced, "Force command");
       net.sendResponse("OK");
     } else if (net.assertCommand("resetAlert")) {
-      resetAlert(alert.reason);
+      resetAlert();
       net.sendResponse("OK");
     } else if (net.assertCommand("startSelfTest")) {
       dcSelfTestStart();
@@ -92,16 +93,21 @@ void loop()
     readDcPumpVoltage();
   }
   
-  // Take care of beeping a buzzer if alert is present
-  if (!alert.present && alert.buzzerState == HIGH) {
+  // Take care of beeping a buzzer if alert is present and not acknowledged
+  if (alert.buzzerState == HIGH && (!alert.present || alert.acknowledged)) {
     digitalWrite(BUZZ_PIN, LOW);
     alert.buzzerState = LOW;
   }
-  if (alert.present && (millis() - alert.buzzerChangeTime) > BUZZ_CYCLE_TIME) {
-    alert.buzzerState = alert.buzzerState ^ 1;
-    // Disabling buzzer notifications for now
-//    digitalWrite(BUZZ_PIN, alert.buzzerState);
-    alert.buzzerChangeTime = millis();
+  if (alert.present) {
+    // Pin has internal pullup. Button grounds the input, hence LOW.
+    if (digitalRead(ACK_PIN) == LOW) {
+      acknowledgeAlert();
+    }
+    if (!alert.acknowledged && (millis() - alert.buzzerChangeTime) > BUZZ_CYCLE_TIME) {
+      alert.buzzerState = alert.buzzerState ^ 1;
+      // Disabling buzzer notifications for now
+//      digitalWrite(BUZZ_PIN, alert.buzzerState);
+      alert.buzzerChangeTime = millis();
   }
 }
 
@@ -223,25 +229,30 @@ void checkDcSelfTestProgress() {
     
     // If we haven't returned yet, test has passed successfully
     selftest.passed = true;
-    resetAlert(DcPumpMalfunction);
   }
 }
 
 void raiseAlert(alertReason reason, char *text)
 {
-  if (!alert.present) {
+  // reason with lower number means it's higher importance, so need to override whatever there is right now
+  if (!alert.present || reason < alert.reason) {
     alert.present = true;
+    alert.acknowledged = false;
     alert.timeTriggered = now();
     strcpy(alert.condition, text);
     alert.reason = reason;
   }
 }
 
+// Acknowledging alert will silence it, but not disable on rs-485
+void acknowledgeAlert() {
+  alert.acknowledged = true;
+}
+
 void resetAlert(alertReason reason) {
-  if (alert.present && alert.reason == reason) {
-    alert.present = false;
-    strcpy(alert.condition, "");
-  }
+  alert.present = false;
+  alert.acknowledged = false;
+  // We'd like to keep condition in the text so that we can examine it in the future
 }
 
 unsigned int readDcPumpVoltage()
@@ -261,8 +272,6 @@ unsigned int readBatteryVoltage()
   unsigned int mv = getVoltage( BATTERY_VOLTAGE_PIN );
   if (mv < ALERT_BATTERY_VOLTAGE) {
     raiseAlert(DischargedBattery, "Battery voltage");
-  } else {
-    resetAlert(DischargedBattery);
   }
   return mv;
 }
@@ -270,9 +279,10 @@ unsigned int readBatteryVoltage()
 unsigned int readDistance()
 {
   range.timeTaken = now();
+  // Since sensor is mounted at the top and looking down, 0 is considered full pit, and it goes down from there.
   range.distance = -ultrasonic.Ranging(CM);
   
-  // Update observed highs and lows
+  // Update observed highs and lows, they are used in DC pump self-test
   if (range.distance > range.highs[1]) {
     range.highs[1] = range.distance;
   }
@@ -282,8 +292,6 @@ unsigned int readDistance()
       
   if (range.distance > ALERT_WATER_LEVEL) {
     raiseAlert(WaterLevel, "Water level");
-  } else {
-    resetAlert(WaterLevel);
   }
   return range.distance;
 }
@@ -295,8 +303,6 @@ int readPressure()
   // Alert business
   if (acpump.lastPressure > ALERT_PRESSURE_LEVEL) {
     raiseAlert(HighPressure, "High pressure");
-  } else {
-    resetAlert(HighPressure);
   }
   
   boolean currentlyOn;
@@ -333,8 +339,6 @@ int readPressure()
   if (currentlyOn) {
     if ((now() - acpump.switchOnTime) > AC_PUMP_ON_TIME_WARNING) {
       raiseAlert(AcPumpOverload, "AC pump ON for too long");
-    } else {
-      resetAlert(AcPumpOverload);
     }
   }
   
