@@ -1,32 +1,40 @@
+// Config version
+#define CONFIG_VERSION "SP1"
 // Acknowledge button pin
 #define ACK_PIN 9
 // Pin with buzzer output for sounding an alarm
 #define BUZZ_PIN 5
+// Ultrasonic HC-SR04 pins
+#define ULTRASONIC_ECHO_PIN 8
+#define ULTRASONIC_TRIG_PIN 7
+// SyrotaAutomation parameters
+#define RS485_CONTROL_PIN 2
+#define NET_ADDRESS "SumpPump"
 // Time the buzzer should cycle in on/off states (milliseconds)
 #define BUZZ_CYCLE_TIME 500
-// Frequency with which water level should be read (seconds)
-#define DEPTH_MEASURE_TIME 5
-// Length of DC Pump self test, if depth measurement is not met (seconds)
-#define SELFTEST_TIME_LIMIT 20
 // Number of AC pump cycles to wait to do another self test
 #define SELFTEST_AC_CYCLES 30
-// Minimum number of seconds between self tests
-#define SELFTEST_TIME_BETWEEN 86400UL // 3600 * 24 hours
 
 // Pressure sensor related data
 #define PRESSURE_SENSOR_PIN A0
-#define AC_PUMP_ON_THRESHOLD 520 // reading of higher than this means pump is ON
-#define ALERT_PRESSURE_LEVEL 600 // reading of higher than this might indicate clogged pipe and needs to trigger an alarm
-#define AC_PUMP_ON_TIME_WARNING 30 // number of seconds AC pump can be on at a time before warning
 
 // DC pump interface pins
 #define BATTERY_VOLTAGE_PIN A7
 #define DC_PUMP_VOLTAGE_PIN A6
 #define DC_PUMP_TRIGGER_PIN 10
 
-// Alert levels
-#define ALERT_BATTERY_VOLTAGE 12000 // mV
-#define ALERT_WATER_LEVEL -40 // Distance to the sensor in CM when alert should be triggered
+struct configuration_t {
+  char checkVersion[4]; // This is for detection if we have right settings or not
+  unsigned int alertBatteryVoltage; // mV
+  int alertWaterLevel; // Distance to the sensor in CM when alert should be triggered
+  unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
+  int acPumpOnThreshold; // reading of higher than this means pump is ON
+  int alertPressureLevel; // reading of higher than this might indicate clogged pipe and needs to trigger an alarm
+  int acPumpOnTimeWarning; // number of seconds AC pump can be on at a time before warning
+  unsigned long selftestTimeBetween; // Minimum number of seconds between self tests
+  byte selfTestTimeLimit; // Length of DC Pump self test, if depth measurement is not met (seconds)
+  byte depthMeasureTime; // Frequency with which water level should be read (seconds)
+};
 
 // Alert reason codes
 enum alertReason {

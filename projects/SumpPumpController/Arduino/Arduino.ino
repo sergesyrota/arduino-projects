@@ -1,24 +1,39 @@
+#include <EEPROMex.h>
 #include <SoftwareSerial.h>
 #include <Ultrasonic.h>
 #include <SyrotaAutomation1.h>
 #include <Time.h>
 #include "include.h"
 
-SyrotaAutomation net = SyrotaAutomation(2);
-Ultrasonic ultrasonic(7,8); // Trig, Echo
+SyrotaAutomation net = SyrotaAutomation(RS485_CONTROL_PIN);
+Ultrasonic ultrasonic(ULTRASONIC_TRIG_PIN, ULTRASONIC_ECHO_PIN); // Trig, Echo
 
 struct Range range;
 struct Selftest selftest;
 struct Alert alert;
 struct AcPump acpump;
+struct configuration_t conf = {
+  CONFIG_VERSION,
+  // Default values for config
+  12000U, //unsigned int alertBatteryVoltage; // mV
+  -40, //int alertWaterLevel; // Distance to the sensor in CM when alert should be triggered
+  9600UL, //unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
+  520, //int acPumpOnThreshold; // reading of higher than this means pump is ON
+  600, //int alertPressureLevel; // reading of higher than this might indicate clogged pipe and needs to trigger an alarm
+  30, //int acPumpOnTimeWarning; // number of seconds AC pump can be on at a time before warning
+  86400UL, //unsigned long selftestTimeBetween; // Minimum number of seconds between self tests
+  20, //byte selfTestTimeLimit; // Length of DC Pump self test, if depth measurement is not met (seconds)
+  5 //byte depthMeasureTime; // Frequency with which water level should be read (seconds)
+};
 
 // Buffer for char conversions
-char buf [40];
+char buf [100];
 
 void setup()
 {
+  readConfig();
   // Set device ID
-  strcpy(net.deviceID, "SumpPump");
+  strcpy(net.deviceID, NET_ADDRESS);
   Serial.begin(9600);
   pinMode(BATTERY_VOLTAGE_PIN, INPUT);
   pinMode(DC_PUMP_VOLTAGE_PIN, INPUT);
@@ -29,6 +44,30 @@ void setup()
   // Initialize with alert ON to make sure buzzer works
   alert.buzzerState = LOW;
 //  digitalWrite(BUZZ_PIN, HIGH);
+}
+
+void readConfig()
+{
+  // Check to make sure config values are real, by looking at first 3 bytes
+  if (EEPROM.read(0) == CONFIG_VERSION[0] &&
+    EEPROM.read(1) == CONFIG_VERSION[1] &&
+    EEPROM.read(2) == CONFIG_VERSION[2]) {
+    EEPROM.readBlock(0, conf);
+  } else {
+    // Configuration is invalid, so let's write default to memory
+    saveConfig();
+  }
+}
+
+void saveConfig()
+{
+  EEPROM.writeBlock(0, conf);
+}
+
+int freeRam() {
+  extern int __heap_start, *__brkval; 
+  int v; 
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
 }
 
 void loop()
@@ -66,6 +105,8 @@ void loop()
     } else if (net.assertCommand("startSelfTest")) {
       dcSelfTestStart();
       net.sendResponse("OK");
+    } else if (net.assertCommandStarts("set", buf)) {
+      processSetCommands();
     } else if (net.assertCommand("debug")) {
       sendDebugResponse();
     } else {
@@ -77,7 +118,7 @@ void loop()
   readPressure();
   
   // Read water depth if it's been too long since last time
-  if (now() - range.timeTaken > DEPTH_MEASURE_TIME) {
+  if (now() - range.timeTaken > conf.selfTestTimeLimit) {
     readDistance();
     // measure battery voltage with the same frequency
     readBatteryVoltage();
@@ -108,24 +149,125 @@ void loop()
       // Disabling buzzer notifications for now
 //      digitalWrite(BUZZ_PIN, alert.buzzerState);
       alert.buzzerChangeTime = millis();
+    }
+  }
+}
+
+// Write to the configuration when we receive new parameters
+void processSetCommands()
+{
+  if (net.assertCommandStarts("setAlertBatteryVoltage:", buf)) {
+    unsigned int tmp = strtol(buf, NULL, 10);
+    if (tmp > 9000 && tmp < 15000) {
+      conf.alertBatteryVoltage = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setAlertWaterLevel:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp > -80 && tmp < -3) {
+      conf.alertWaterLevel = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setBaudRate:", buf)) {
+    long tmp = strtol(buf, NULL, 10);
+    // Supported: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
+    if (tmp == 9600 ||
+      tmp == 14400 ||
+      tmp == 19200 ||
+      tmp == 28800 ||
+      tmp == 38400 ||
+      tmp == 57600 ||
+      tmp == 115200
+    ) {
+      conf.baudRate = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+      Serial.end();
+      Serial.begin(tmp);
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setAcPumpOnThreshold:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp > 0 && tmp < 1025) {
+      conf.acPumpOnThreshold = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setAlertPressureLevel:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp > 0 && tmp < 1025) {
+      conf.alertPressureLevel = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setAcPumpOnTimeWarning:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp > 0 && tmp < 30000) {
+      conf.acPumpOnTimeWarning = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setSelftestTimeBetween:", buf)) {
+    long tmp = strtol(buf, NULL, 10);
+    if (tmp > 0 && tmp < 1000000L) {
+      conf.selftestTimeBetween = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setSelfTestTimeLimit:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    // More than 6 seconds, as we're checking that DC pump is on at 6 second mark.
+    if (tmp > 6 && tmp < 200) {
+      conf.selfTestTimeLimit = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setDepthMeasureTime:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp >= 0 && tmp < 120) {
+      conf.depthMeasureTime = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else {
+    net.sendResponse("Unrecognized command");
   }
 }
 
 void sendDebugResponse()
 {
-  sprintf(buf, "time=%lu", now());
+  sprintf(buf, (const prog_char*) F("time=%lu"), now());
   net.responseSendPart(buf);
-  sprintf(buf, "rangeLH[0]=%d,%d", range.lows[0], range.highs[0]);
+  sprintf(buf, (const prog_char*) F("rangeLH[0]=%d,%d"), range.lows[0], range.highs[0]);
   net.responseSendPart(buf);
-  sprintf(buf, "&rangeLH[1]=%d,%d", range.lows[1], range.highs[1]);
+  sprintf(buf, (const prog_char*) F("&rangeLH[1]=%d,%d"), range.lows[1], range.highs[1]);
   net.responseSendPart(buf);
-  sprintf(buf, "&DcHeight=%d,%d", selftest.startingHeight, selftest.endingHeight);
+  sprintf(buf, (const prog_char*) F("&DcHeight=%d,%d"), selftest.startingHeight, selftest.endingHeight);
   net.responseSendPart(buf);
-  sprintf(buf, "&pressure=%d", analogRead(PRESSURE_SENSOR_PIN));
+  sprintf(buf, (const prog_char*) F("&pressure=%d"), analogRead(PRESSURE_SENSOR_PIN));
   net.responseSendPart(buf);
-  sprintf(buf, "&AcPumpCycles=%d", acpump.onCycles);
+  sprintf(buf, (const prog_char*) F("&AcPumpCycles=%d"), acpump.onCycles);
   net.responseSendPart(buf);
-  sprintf(buf, "&lastAlertTime=%lu", alert.timeTriggered);
+  sprintf(buf, (const prog_char*) F("&lastAlertTime=%lu"), alert.timeTriggered);
   net.responseSendPart(buf);
 //  sprintf(buf, );
 //  net.responseSendPart(buf);
@@ -141,17 +283,17 @@ void sendDebugResponse()
 
 void sendSelfTestResponse()
 {
-   sprintf(buf, "timeSince=%lu&", (now() - selftest.lastTestTime));
+   sprintf(buf, (const prog_char*) F("timeSince=%lu&"), (now() - selftest.lastTestTime));
    net.responseSendPart(buf);
-   sprintf(buf, "cyclesSince=%d&", acpump.onCycles-selftest.acCycles);
+   sprintf(buf, (const prog_char*) F("cyclesSince=%d&"), acpump.onCycles-selftest.acCycles);
    net.responseSendPart(buf);
-   sprintf(buf, "voltage=%d&", selftest.batteryVoltageMv);
+   sprintf(buf, (const prog_char*) F("voltage=%d&"), selftest.batteryVoltageMv);
    net.responseSendPart(buf);
-   sprintf(buf, "length=%d&", (int)selftest.testLength);
+   sprintf(buf, (const prog_char*) F("length=%d&"), (int)selftest.testLength);
    net.responseSendPart(buf);
-   sprintf(buf, "pumpedHeight=%d&", selftest.startingHeight - selftest.endingHeight);
+   sprintf(buf, (const prog_char*) F("pumpedHeight=%d&"), selftest.startingHeight - selftest.endingHeight);
    net.responseSendPart(buf);
-   sprintf(buf, "result=%d", selftest.passed);
+   sprintf(buf, (const prog_char*) F("result=%d"), selftest.passed);
    net.responseSendPart(buf);
    net.responseEnd();
 }
@@ -163,7 +305,7 @@ void checkDcSelfTestStart()
     return;
   }
   // Check how long has passed since last self test. If not long enough, exit
-  if ((now() - selftest.lastTestTime) < SELFTEST_TIME_BETWEEN) {
+  if ((now() - selftest.lastTestTime) < conf.selftestTimeBetween) {
     return;
   }
   
@@ -201,7 +343,7 @@ void checkDcSelfTestProgress() {
 //    selftest.batteryVoltageMv = currentVoltage;
 //  }
   // Only time limit will stop the test at this point
-  if (now() - selftest.lastTestTime > SELFTEST_TIME_LIMIT) {
+  if (now() - selftest.lastTestTime > conf.selfTestTimeLimit) {
     digitalWrite(DC_PUMP_TRIGGER_PIN, LOW);
     selftest.nowActive = false;
     // When DC pump is working, it might give trouble to distance sensor, so reading after it's off.
@@ -213,16 +355,16 @@ void checkDcSelfTestProgress() {
     
     // Determine if self test was successful
     // Battery voltage should not drop too much
-    if (selftest.batteryVoltageMv < ALERT_BATTERY_VOLTAGE) {
+    if (selftest.batteryVoltageMv < conf.alertBatteryVoltage) {
       selftest.passed = false;
-      sprintf(buf, "Weak battery: %dmV", selftest.batteryVoltageMv);
+      sprintf(buf, (const prog_char*) F("Weak battery: %dmV"), selftest.batteryVoltageMv);
       raiseAlert(DcPumpMalfunction, buf);
       return;
     }
     // Determine if water level was reduced enough
     if (selftest.startingHeight - selftest.endingHeight < 5) {
       selftest.passed = false;
-      sprintf(buf, "DC Pump failure: %dCM pumped in %d sec.", (selftest.startingHeight - selftest.endingHeight), (int)selftest.testLength);
+      sprintf(buf, (const prog_char*) F("DC Pump failure: %dCM pumped in %d sec."), (selftest.startingHeight - selftest.endingHeight), (int)selftest.testLength);
       raiseAlert(DcPumpMalfunction, buf);
       return;
     }
@@ -249,7 +391,7 @@ void acknowledgeAlert() {
   alert.acknowledged = true;
 }
 
-void resetAlert(alertReason reason) {
+void resetAlert() {
   alert.present = false;
   alert.acknowledged = false;
   // We'd like to keep condition in the text so that we can examine it in the future
@@ -260,7 +402,7 @@ unsigned int readDcPumpVoltage()
   unsigned int mv = getVoltage( DC_PUMP_VOLTAGE_PIN );
   // If voltage is more than 0, then pump is on, and we need to sound an alert
   // Need to make sure to wait a few seconds after self test to see if DC pump is ON
-  if (mv > 9000 && (now() - selftest.lastTestTime) > (SELFTEST_TIME_LIMIT + 6)) {
+  if (mv > 9000 && (now() - selftest.lastTestTime) > (conf.selfTestTimeLimit + 6)) {
     raiseAlert(DcPumpActivated, "DC Pump ON");
   }
   // We will not deactivate alarm when pump will be off. It needs to be reset manually.
@@ -270,7 +412,7 @@ unsigned int readDcPumpVoltage()
 unsigned int readBatteryVoltage() 
 {
   unsigned int mv = getVoltage( BATTERY_VOLTAGE_PIN );
-  if (mv < ALERT_BATTERY_VOLTAGE) {
+  if (mv < conf.alertBatteryVoltage) {
     raiseAlert(DischargedBattery, "Battery voltage");
   }
   return mv;
@@ -290,7 +432,7 @@ unsigned int readDistance()
     range.lows[1] = range.distance;
   }
       
-  if (range.distance > ALERT_WATER_LEVEL) {
+  if (range.distance > conf.alertWaterLevel) {
     raiseAlert(WaterLevel, "Water level");
   }
   return range.distance;
@@ -301,12 +443,12 @@ int readPressure()
   acpump.lastPressure = analogRead(PRESSURE_SENSOR_PIN);
   
   // Alert business
-  if (acpump.lastPressure > ALERT_PRESSURE_LEVEL) {
+  if (acpump.lastPressure > conf.alertPressureLevel) {
     raiseAlert(HighPressure, "High pressure");
   }
   
   boolean currentlyOn;
-  if (acpump.lastPressure > AC_PUMP_ON_THRESHOLD) {
+  if (acpump.lastPressure > conf.acPumpOnThreshold) {
     currentlyOn = true;
   } else {
     currentlyOn = false;
@@ -337,7 +479,7 @@ int readPressure()
   
   // Check if AC pump was on for too long
   if (currentlyOn) {
-    if ((now() - acpump.switchOnTime) > AC_PUMP_ON_TIME_WARNING) {
+    if ((now() - acpump.switchOnTime) > conf.acPumpOnTimeWarning) {
       raiseAlert(AcPumpOverload, "AC pump ON for too long");
     }
   }
