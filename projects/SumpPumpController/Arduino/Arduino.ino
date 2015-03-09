@@ -34,7 +34,7 @@ void setup()
   readConfig();
   // Set device ID
   strcpy(net.deviceID, NET_ADDRESS);
-  Serial.begin(9600);
+  Serial.begin(conf.baudRate);
   pinMode(BATTERY_VOLTAGE_PIN, INPUT);
   pinMode(DC_PUMP_VOLTAGE_PIN, INPUT);
   pinMode(BUZZ_PIN, OUTPUT);
