@@ -1,5 +1,5 @@
 // Config version
-#define CONFIG_VERSION "SP1"
+#define CONFIG_VERSION "SP2"
 // Acknowledge button pin
 #define ACK_PIN 9
 // Pin with buzzer output for sounding an alarm
@@ -34,6 +34,7 @@ struct configuration_t {
   unsigned long selftestTimeBetween; // Minimum number of seconds between self tests
   byte selfTestTimeLimit; // Length of DC Pump self test, if depth measurement is not met (seconds)
   byte depthMeasureTime; // Frequency with which water level should be read (seconds)
+  boolean buzzerEnabled; // whether buzzer should sound in case of alert or not
 };
 
 // Alert reason codes

@@ -23,7 +23,8 @@ struct configuration_t conf = {
   30, //int acPumpOnTimeWarning; // number of seconds AC pump can be on at a time before warning
   86400UL, //unsigned long selftestTimeBetween; // Minimum number of seconds between self tests
   20, //byte selfTestTimeLimit; // Length of DC Pump self test, if depth measurement is not met (seconds)
-  5 //byte depthMeasureTime; // Frequency with which water level should be read (seconds)
+  5, //byte depthMeasureTime; // Frequency with which water level should be read (seconds)
+  false //boolean buzzerEnabled; // whether buzzer should sound in case of alert or not
 };
 
 // Buffer for char conversions
@@ -144,10 +145,9 @@ void loop()
     if (digitalRead(ACK_PIN) == LOW) {
       acknowledgeAlert();
     }
-    if (!alert.acknowledged && (millis() - alert.buzzerChangeTime) > BUZZ_CYCLE_TIME) {
+    if (conf.buzzerEnabled && !alert.acknowledged && (millis() - alert.buzzerChangeTime) > BUZZ_CYCLE_TIME) {
       alert.buzzerState = alert.buzzerState ^ 1;
-      // Disabling buzzer notifications for now
-//      digitalWrite(BUZZ_PIN, alert.buzzerState);
+      digitalWrite(BUZZ_PIN, alert.buzzerState);
       alert.buzzerChangeTime = millis();
     }
   }
@@ -248,6 +248,15 @@ void processSetCommands()
     } else {
       net.sendResponse("ERROR");
     }
+  } else if (net.assertCommandStarts("setBuzzerEnabled:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp == 1 || tmp == 0) {
+      conf.buzzerEnabled = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
   } else {
     net.sendResponse("Unrecognized command");
   }
@@ -255,19 +264,19 @@ void processSetCommands()
 
 void sendDebugResponse()
 {
-  sprintf(buf, (const prog_char*) F("time=%lu"), now());
+  sprintf(buf, "time=%lu", now());
   net.responseSendPart(buf);
-  sprintf(buf, (const prog_char*) F("rangeLH[0]=%d,%d"), range.lows[0], range.highs[0]);
+  sprintf(buf, "rangeLH[0]=%d,%d", range.lows[0], range.highs[0]);
   net.responseSendPart(buf);
-  sprintf(buf, (const prog_char*) F("&rangeLH[1]=%d,%d"), range.lows[1], range.highs[1]);
+  sprintf(buf, "&rangeLH[1]=%d,%d", range.lows[1], range.highs[1]);
   net.responseSendPart(buf);
-  sprintf(buf, (const prog_char*) F("&DcHeight=%d,%d"), selftest.startingHeight, selftest.endingHeight);
+  sprintf(buf, "&DcHeight=%d,%d", selftest.startingHeight, selftest.endingHeight);
   net.responseSendPart(buf);
-  sprintf(buf, (const prog_char*) F("&pressure=%d"), analogRead(PRESSURE_SENSOR_PIN));
+  sprintf(buf, "&pressure=%d", analogRead(PRESSURE_SENSOR_PIN));
   net.responseSendPart(buf);
-  sprintf(buf, (const prog_char*) F("&AcPumpCycles=%d"), acpump.onCycles);
+  sprintf(buf, "&AcPumpCycles=%d", acpump.onCycles);
   net.responseSendPart(buf);
-  sprintf(buf, (const prog_char*) F("&lastAlertTime=%lu"), alert.timeTriggered);
+  sprintf(buf, "&lastAlertTime=%lu", alert.timeTriggered);
   net.responseSendPart(buf);
 //  sprintf(buf, );
 //  net.responseSendPart(buf);
@@ -283,17 +292,17 @@ void sendDebugResponse()
 
 void sendSelfTestResponse()
 {
-   sprintf(buf, (const prog_char*) F("timeSince=%lu&"), (now() - selftest.lastTestTime));
+   sprintf(buf, "timeSince=%lu&", (now() - selftest.lastTestTime));
    net.responseSendPart(buf);
-   sprintf(buf, (const prog_char*) F("cyclesSince=%d&"), acpump.onCycles-selftest.acCycles);
+   sprintf(buf, "cyclesSince=%d&", acpump.onCycles-selftest.acCycles);
    net.responseSendPart(buf);
-   sprintf(buf, (const prog_char*) F("voltage=%d&"), selftest.batteryVoltageMv);
+   sprintf(buf, "voltage=%d&", selftest.batteryVoltageMv);
    net.responseSendPart(buf);
-   sprintf(buf, (const prog_char*) F("length=%d&"), (int)selftest.testLength);
+   sprintf(buf, "length=%d&", (int)selftest.testLength);
    net.responseSendPart(buf);
-   sprintf(buf, (const prog_char*) F("pumpedHeight=%d&"), selftest.startingHeight - selftest.endingHeight);
+   sprintf(buf, "pumpedHeight=%d&", selftest.startingHeight - selftest.endingHeight);
    net.responseSendPart(buf);
-   sprintf(buf, (const prog_char*) F("result=%d"), selftest.passed);
+   sprintf(buf, "result=%d", selftest.passed);
    net.responseSendPart(buf);
    net.responseEnd();
 }
@@ -357,14 +366,14 @@ void checkDcSelfTestProgress() {
     // Battery voltage should not drop too much
     if (selftest.batteryVoltageMv < conf.alertBatteryVoltage) {
       selftest.passed = false;
-      sprintf(buf, (const prog_char*) F("Weak battery: %dmV"), selftest.batteryVoltageMv);
+      sprintf(buf, "Weak battery: %dmV", selftest.batteryVoltageMv);
       raiseAlert(DcPumpMalfunction, buf);
       return;
     }
     // Determine if water level was reduced enough
     if (selftest.startingHeight - selftest.endingHeight < 5) {
       selftest.passed = false;
-      sprintf(buf, (const prog_char*) F("DC Pump failure: %dCM pumped in %d sec."), (selftest.startingHeight - selftest.endingHeight), (int)selftest.testLength);
+      sprintf(buf, "DC Pump failure: %dCM pumped in %d sec.", (selftest.startingHeight - selftest.endingHeight), (int)selftest.testLength);
       raiseAlert(DcPumpMalfunction, buf);
       return;
     }
