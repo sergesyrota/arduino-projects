@@ -1,4 +1,5 @@
 #define NET_ADDRESS "DiningBlinds"
+#define CONFIG_VERSION "BL1"
 
 #define RS485_CONTROL_PIN 2
 #define MOTION_PIN 12
@@ -15,18 +16,15 @@
 #define SENSOR_POSITION_BOTTOM_PIN A3
 #define SENSOR_POSITION_TOP_PIN A0
 
-// EEPROM values
-#define MEMORY_BYTES 7
-// Maximum runtime for a motor to go in one direction, regardless of sensor inputs (seconds)
-#define MAX_MOTOR_RUNTIME_ADDR 0
-// If switch changes position in this amount of time, consider it a stop command instead
-// in 1/10th of a second
-#define SWITCH_STOP_WINDOW_ADDR 1
-// Sensor threshold direction (0 = less than; 1 = greater than)
-#define SENSOR_THRESHOLD_DIRECTION 2
-// Sensor threshold values, 2 bytes each
-#define BOTTOM_SENSOR_THRESHOLD_ADDR 3
-#define TOP_SENSOR_THRESHOLD_ADDR 5
+struct configuration_t {
+  char checkVersion[4]; // This is for detection if we have right settings or not
+  int maxMotorRuntime; // Number of seconds to limit individual motor run to
+  int switchStopWindow; // Number of milliseconds threshold to consider it stop command, rather than switch (e.g. double click speed)
+  boolean sensorThresholdDirection; // 0 = less than; 1 = greater than
+  int bottomSensorThreshold; // Value after which we assume blinds are at the bottom position
+  int topSensorThreshold; // Same, but for top sensor
+  unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
+};
 
 struct SensorData_t {
   int bottom;

@@ -1,6 +1,6 @@
 #include <SyrotaAutomation1.h>
 #include "config.h"
-#include <EEPROM.h>
+#include <EEPROMex.h>
 
 SyrotaAutomation net = SyrotaAutomation(RS485_CONTROL_PIN);
 
@@ -14,16 +14,23 @@ boolean motorRunning;
 boolean motorDirection;
 boolean motionSensorStatus;
 unsigned long lastMotionTime;
+int knownBlindsPosition = -1; // Extra protection HIGH = rolled up, LOW = rolled down, -1 = unknown
 
 // Values we store in EEPROM
-int maxMotorRuntime;
-int switchStopWindow;
-int sensorThresholdDirection;
-int bottomSensorThreshold;
-int topSensorThreshold;
+struct configuration_t conf = {
+  CONFIG_VERSION,
+  // Default values for config
+  10, //int maxMotorRuntime; // Number of seconds to limit individual motor run to
+  200, //int switchStopWindow; // Number of milliseconds threshold to consider it stop command, rather than switch (e.g. double click speed)
+  0, //boolean sensorThresholdDirection; // 0 = less than; 1 = greater than
+  900, //int bottomSensorThreshold; // Value after which we assume blinds are at the bottom position
+  900, //int topSensorThreshold; // Same, but for top sensor
+  9600 //unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
+};
 
 void setup()
 { 
+  readConfig();
   // Motor pins
   pinMode(MOTOR_ENABLE_PIN, OUTPUT);
   digitalWrite(MOTOR_ENABLE_PIN, LOW);
@@ -39,18 +46,39 @@ void setup()
   pinMode(MOTION_PIN, INPUT);
   pinMode(OPTICAL_SENSOR_ENABLE_PIN, OUTPUT);
   
-  cacheEepromValues();
   strcpy(net.deviceID, NET_ADDRESS);
   Serial.begin(9600);
+}
+
+void readConfig()
+{
+  // Check to make sure config values are real, by looking at first 3 bytes
+  if (EEPROM.read(0) == CONFIG_VERSION[0] &&
+    EEPROM.read(1) == CONFIG_VERSION[1] &&
+    EEPROM.read(2) == CONFIG_VERSION[2]) {
+    EEPROM.readBlock(0, conf);
+  } else {
+    // Configuration is invalid, so let's write default to memory
+    saveConfig();
+  }
+}
+
+void saveConfig()
+{
+  EEPROM.writeBlock(0, conf);
 }
 
 void loop()
 {
   if (net.messageReceived()) {
-    if (net.assertCommand("debug")) {
-//      SensorData_t one = readOptical(SENSOR_POSITION_BOTTOM_PIN);
-//      SensorData_t two = readOptical(SENSOR_POSITION_TOP_PIN);
-      sprintf(buf, "Rom values: %d %d %d %d %d", maxMotorRuntime, switchStopWindow, sensorThresholdDirection, bottomSensorThreshold, topSensorThreshold);
+    if (net.assertCommand("getSensors")) {
+      SensorData_t sensAmbient = readOptical(true);
+      SensorData_t sens = readOptical();
+      sprintf(buf, "T: %d / %d; B: %d / %d;", 
+        sensAmbient.top,
+        sens.top,
+        sensAmbient.bottom,
+        sens.bottom);
       net.sendResponse(buf);
     } else if (net.assertCommand("rollUp")) {
       // Since we have time limits, we need to reset switch time
@@ -64,22 +92,21 @@ void loop()
       net.sendResponse("OK");
     } else if (net.assertCommand("timeSinceMotion")) {
       if (motionSensorStatus == HIGH) {
-        net.sendResponse("0");
+        net.sendResponse("0s");
       } else {
-        sprintf(buf, "%d", (millis() - lastMotionTime)/1000);
+        sprintf(buf, "%ds", (millis() - lastMotionTime)/1000);
         net.sendResponse(buf);
       }
-    } else if (net.assertCommandStarts("setEeprom:", buf)) {
-      // Usage: /bin/runCommand DeviceAddr setEeprom:3d0010
-      // each 2 characters after : represents (in hex notation, transfered in plain text) a byte to be written to EEPROM
-      char tempString [2];
-      for (int addr=0; addr<MEMORY_BYTES; addr++) {
-        tempString[0] = buf[addr*2];
-        tempString[1] = buf[(addr*2)+1];
-        EEPROM.write(addr, (byte)strtol(tempString, NULL, 16));
-      }
-      cacheEepromValues();
-      net.sendResponse("Settings saved");
+    } else if (net.assertCommand("debug")) {
+      sprintf(buf, "Conf: %d %d %d %d %d", 
+        conf.maxMotorRuntime, 
+        conf.switchStopWindow, 
+        conf.sensorThresholdDirection, 
+        conf.bottomSensorThreshold, 
+        conf.topSensorThreshold);
+      net.sendResponse(buf);
+    } else if (net.assertCommandStarts("set", buf)) {
+      processSetCommands();
     } else {
       net.sendResponse("Unrecognized command");
     }
@@ -91,25 +118,101 @@ void loop()
   }
 }
 
+void processSetCommands()
+{
+  if (net.assertCommandStarts("setMaxMotorRuntime:", buf)) {
+    unsigned int tmp = strtol(buf, NULL, 10);
+    if (tmp > 0 && tmp < 60) {
+      conf.maxMotorRuntime = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setSwitchStopWindow:", buf)) {
+    unsigned int tmp = strtol(buf, NULL, 10);
+    if (tmp > 0 && tmp < 1000) {
+      conf.switchStopWindow = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setSensorThresholdDirection:", buf)) {
+    unsigned int tmp = strtol(buf, NULL, 10);
+    if (tmp == 0 || tmp == 1) {
+      conf.sensorThresholdDirection = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setBottomSensorThreshold:", buf)) {
+    unsigned int tmp = strtol(buf, NULL, 10);
+    if (tmp > 0 && tmp < 1025) {
+      conf.bottomSensorThreshold = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setTopSensorThreshold:", buf)) {
+    unsigned int tmp = strtol(buf, NULL, 10);
+    if (tmp > 0 && tmp < 1025) {
+      conf.topSensorThreshold = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setBaudRate:", buf)) {
+    long tmp = strtol(buf, NULL, 10);
+    // Supported: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
+    if (tmp == 9600 ||
+      tmp == 14400 ||
+      tmp == 19200 ||
+      tmp == 28800 ||
+      tmp == 38400 ||
+      tmp == 57600 ||
+      tmp == 115200
+    ) {
+      conf.baudRate = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+      Serial.end();
+      Serial.begin(tmp);
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else {
+    net.sendResponse("Unrecognized command");
+  }
+}
+
 void checkMotorStopConditions() {
   // Just in case, limit maximum roll in one direction
-  if (millis() - lastSwitchTime > maxMotorRuntime) {
+  if (millis() - lastSwitchTime > conf.maxMotorRuntime*1000) {
     motorStop();
+    knownBlindsPosition = -1;
   }
   
   SensorData_t led = readOptical();
   // Limit when we sense it has reached "destination"
   if (motorDirection == MOTOR_DIRECTION_UP) {
-    if (sensorThresholdDirection == 0 && led.top < topSensorThreshold) {
+    if (conf.sensorThresholdDirection == 0 && led.top < conf.topSensorThreshold) {
       motorStop();
-    } else if (sensorThresholdDirection == 1 && led.top > topSensorThreshold) {
+      knownBlindsPosition = HIGH;
+    } else if (conf.sensorThresholdDirection == 1 && led.top > conf.topSensorThreshold) {
       motorStop();
+      knownBlindsPosition = HIGH;
     }
   } else {
-    if (sensorThresholdDirection == 0 && led.bottom < bottomSensorThreshold) {
+    if (conf.sensorThresholdDirection == 0 && led.bottom < conf.bottomSensorThreshold) {
       motorStop();
-    } else if (sensorThresholdDirection == 1 && led.bottom > bottomSensorThreshold) {
+      knownBlindsPosition = LOW;
+    } else if (conf.sensorThresholdDirection == 1 && led.bottom > conf.bottomSensorThreshold) {
       motorStop();
+      knownBlindsPosition = LOW;
     }
   }
 }
@@ -124,23 +227,18 @@ void readMotion()
   }
 }
 
-void cacheEepromValues()
-{
-  // See config.h for explanation on why we have calculations
-  maxMotorRuntime = EEPROM.read(MAX_MOTOR_RUNTIME_ADDR) * 1000;
-  switchStopWindow = EEPROM.read(SWITCH_STOP_WINDOW_ADDR) * 100;
-  sensorThresholdDirection = EEPROM.read(SENSOR_THRESHOLD_DIRECTION);
-  bottomSensorThreshold = EEPROM.read(BOTTOM_SENSOR_THRESHOLD_ADDR) * 256 + 
-    EEPROM.read(BOTTOM_SENSOR_THRESHOLD_ADDR+1);
-  topSensorThreshold = EEPROM.read(TOP_SENSOR_THRESHOLD_ADDR) * 256 + 
-    EEPROM.read(TOP_SENSOR_THRESHOLD_ADDR+1);
-}
-
 SensorData_t readOptical()
 {
+  return readOptical(false);
+}
+
+SensorData_t readOptical(boolean ambient)
+{
   SensorData_t res;
-  digitalWrite(OPTICAL_SENSOR_ENABLE_PIN, HIGH);
-  delay(1);
+  if (!ambient) {
+    digitalWrite(OPTICAL_SENSOR_ENABLE_PIN, HIGH);
+    delay(1);
+  }
   res.bottom = analogRead(SENSOR_POSITION_BOTTOM_PIN);
   res.top = analogRead(SENSOR_POSITION_TOP_PIN);
   digitalWrite(OPTICAL_SENSOR_ENABLE_PIN, LOW);
@@ -159,8 +257,9 @@ If switch was changed:
 void readSwitch()
 {
   if (getSwitchState() != lastSwitchState) {
-    if (millis() - lastSwitchTime < switchStopWindow) {
+    if (millis() - lastSwitchTime < conf.switchStopWindow) {
       motorStop();
+      knownBlindsPosition = -1;
     } else {
       if (lastSwitchState == MOTOR_DIRECTION_DOWN) {
         motorDown();
@@ -188,6 +287,10 @@ void motorStop()
 
 void motorUp()
 {
+  // Extra protection. If we know blinds are already up, not engage roll up
+  if (knownBlindsPosition == HIGH) {
+    return;
+  }
   // Rolling up is the NC state of the relay, hence no power to relay coil
   digitalWrite(MOTOR_DIRECTION_PIN, LOW);
   delay(10); // give relay chance to switch, if it needs to
@@ -198,6 +301,10 @@ void motorUp()
 
 void motorDown()
 {
+  // Extra protection. If we know blinds are already up, not engage roll up
+  if (knownBlindsPosition == LOW) {
+    return;
+  }
   // Rolling up is the NC state of the relay, hence need to power relay to pull down
   digitalWrite(MOTOR_DIRECTION_PIN, HIGH);
   delay(10); // give relay chance to switch, if it needs to
