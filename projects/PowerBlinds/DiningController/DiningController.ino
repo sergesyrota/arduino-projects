@@ -22,9 +22,9 @@ struct configuration_t conf = {
   // Default values for config
   10, //int maxMotorRuntime; // Number of seconds to limit individual motor run to
   200, //int switchStopWindow; // Number of milliseconds threshold to consider it stop command, rather than switch (e.g. double click speed)
-  600, //int bottomSensorThreshold; // Value after which we assume blinds are at the bottom position
-  90, //int topSensorThreshold; // Same, but for top sensor
-  500, //int delayAfterReachingPosition; // After optical sensor identifies target position was reached - roll for a little more to get past the edge
+  700, //int bottomSensorThreshold; // Value after which we assume blinds are at the bottom position
+  500, //int topSensorThreshold; // Difference between A & B to assume reaching the top
+  100, //int delayAfterReachingPosition; // After optical sensor identifies target position was reached - roll for a little more to get past the edge
   9600 //unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
 };
 
@@ -38,7 +38,7 @@ void setup()
   digitalWrite(MOTOR_DIRECTION_PIN, LOW);
   
   // Switch input
-  pinMode(INPUT_SWITCH_PIN, INPUT_PULLUP);
+  pinMode(INPUT_SWITCH_PIN, INPUT);
   lastSwitchState = getSwitchState();
   
   // Sensor pins
@@ -196,7 +196,7 @@ void checkMotorStopConditions() {
   
   SensorData_t led = readOptical();
   // Limit when we sense it has reached "destination"
-  if (motorDirection == MOTOR_DIRECTION_UP && led.b < conf.topSensorThreshold) {
+  if (motorDirection == MOTOR_DIRECTION_UP && abs(led.a-led.b) > conf.topSensorThreshold) {
     stopOnOptical(HIGH);  
   } else if (motorDirection == MOTOR_DIRECTION_DOWN && led.b > conf.bottomSensorThreshold) {
     stopOnOptical(LOW);
@@ -271,7 +271,7 @@ void readSwitch()
 // Have this function so that it's possible to use 3-way switch with middle position, if I'd like in the future
 int getSwitchState()
 {
-  return digitalRead(INPUT_UP_PIN);
+  return digitalRead(INPUT_SWITCH_PIN);
 }
 
 void motorStop()

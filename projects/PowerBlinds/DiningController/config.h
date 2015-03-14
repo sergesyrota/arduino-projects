@@ -1,5 +1,5 @@
 #define NET_ADDRESS "DiningBlinds"
-#define CONFIG_VERSION "BL3"
+#define CONFIG_VERSION "BL4"
 
 #define RS485_CONTROL_PIN 2
 #define MOTION_PIN 12
@@ -7,8 +7,8 @@
 #define CURRENT_PIN A5
 #define MOTOR_ENABLE_PIN 5
 #define MOTOR_DIRECTION_PIN 6
-#define INPUT_SWITCH_PIN 3
-#define INPUT_RESERVED_PIN 4
+#define INPUT_SWITCH_PIN 4
+#define INPUT_RESERVED_PIN 3
 // Direction flags. Should coincide with boolean flags from digitalRead()
 #define MOTOR_DIRECTION_UP LOW
 #define MOTOR_DIRECTION_DOWN HIGH
@@ -21,7 +21,7 @@ struct configuration_t {
   int maxMotorRuntime; // Number of seconds to limit individual motor run to
   int switchStopWindow; // Number of milliseconds threshold to consider it stop command, rather than switch (e.g. double click speed)
   int bottomSensorThreshold; // Value after which we assume blinds are at the bottom position
-  int topSensorThreshold; // Same, but for top sensor
+  int topSensorThreshold; // Difference between A & B to assume reaching the top
   int delayAfterReachingPosition; // After optical sensor identifies target position was reached - roll for a little more to get past the edge
   unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
 };
