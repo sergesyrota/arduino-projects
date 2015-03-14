@@ -22,9 +22,8 @@ struct configuration_t conf = {
   // Default values for config
   10, //int maxMotorRuntime; // Number of seconds to limit individual motor run to
   200, //int switchStopWindow; // Number of milliseconds threshold to consider it stop command, rather than switch (e.g. double click speed)
-  0, //boolean sensorThresholdDirection; // 0 = less than; 1 = greater than
-  900, //int bottomSensorThreshold; // Value after which we assume blinds are at the bottom position
-  900, //int topSensorThreshold; // Same, but for top sensor
+  600, //int bottomSensorThreshold; // Value after which we assume blinds are at the bottom position
+  90, //int topSensorThreshold; // Same, but for top sensor
   500, //int delayAfterReachingPosition; // After optical sensor identifies target position was reached - roll for a little more to get past the edge
   9600 //unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
 };
@@ -39,8 +38,7 @@ void setup()
   digitalWrite(MOTOR_DIRECTION_PIN, LOW);
   
   // Switch input
-  pinMode(INPUT_UP_PIN, INPUT_PULLUP);
-  pinMode(INPUT_DOWN_PIN, INPUT_PULLUP);
+  pinMode(INPUT_SWITCH_PIN, INPUT_PULLUP);
   lastSwitchState = getSwitchState();
   
   // Sensor pins
@@ -75,11 +73,11 @@ void loop()
     if (net.assertCommand("getSensors")) {
       SensorData_t sensAmbient = readOptical(true);
       SensorData_t sens = readOptical();
-      sprintf(buf, "T: %d / %d; B: %d / %d;", 
-        sensAmbient.top,
-        sens.top,
-        sensAmbient.bottom,
-        sens.bottom);
+      sprintf(buf, "A: %d / %d; B: %d / %d;", 
+        sensAmbient.a,
+        sens.a,
+        sensAmbient.b,
+        sens.b);
       net.sendResponse(buf);
     } else if (net.assertCommand("rollUp")) {
       // Since we have time limits, we need to reset switch time
@@ -99,10 +97,9 @@ void loop()
         net.sendResponse(buf);
       }
     } else if (net.assertCommand("debug")) {
-      sprintf(buf, "Conf: %d %d %d %d %d", 
+      sprintf(buf, "Conf: %d %d %d %d", 
         conf.maxMotorRuntime, 
         conf.switchStopWindow, 
-        conf.sensorThresholdDirection, 
         conf.bottomSensorThreshold, 
         conf.topSensorThreshold);
       net.sendResponse(buf);
@@ -123,7 +120,7 @@ void processSetCommands()
 {
   if (net.assertCommandStarts("setMaxMotorRuntime:", buf)) {
     unsigned int tmp = strtol(buf, NULL, 10);
-    if (tmp > 0 && tmp < 60) {
+    if (tmp > 0 && tmp < 300) {
       conf.maxMotorRuntime = tmp;
       saveConfig();
       net.sendResponse("OK");
@@ -134,15 +131,6 @@ void processSetCommands()
     unsigned int tmp = strtol(buf, NULL, 10);
     if (tmp > 0 && tmp < 1000) {
       conf.switchStopWindow = tmp;
-      saveConfig();
-      net.sendResponse("OK");
-    } else {
-      net.sendResponse("ERROR");
-    }
-  } else if (net.assertCommandStarts("setSensorThresholdDirection:", buf)) {
-    unsigned int tmp = strtol(buf, NULL, 10);
-    if (tmp == 0 || tmp == 1) {
-      conf.sensorThresholdDirection = tmp;
       saveConfig();
       net.sendResponse("OK");
     } else {
@@ -208,18 +196,10 @@ void checkMotorStopConditions() {
   
   SensorData_t led = readOptical();
   // Limit when we sense it has reached "destination"
-  if (motorDirection == MOTOR_DIRECTION_UP) {
-    if (conf.sensorThresholdDirection == 0 && led.top < conf.topSensorThreshold) {
-      stopOnOptical(HIGH);
-    } else if (conf.sensorThresholdDirection == 1 && led.top > conf.topSensorThreshold) {
-      stopOnOptical(HIGH);
-    }
-  } else {
-    if (conf.sensorThresholdDirection == 0 && led.bottom < conf.bottomSensorThreshold) {
-      stopOnOptical(LOW);
-    } else if (conf.sensorThresholdDirection == 1 && led.bottom > conf.bottomSensorThreshold) {
-      stopOnOptical(LOW);
-    }
+  if (motorDirection == MOTOR_DIRECTION_UP && led.b < conf.topSensorThreshold) {
+    stopOnOptical(HIGH);  
+  } else if (motorDirection == MOTOR_DIRECTION_DOWN && led.b > conf.bottomSensorThreshold) {
+    stopOnOptical(LOW);
   }
 }
 
@@ -252,9 +232,11 @@ SensorData_t readOptical(boolean ambient)
     digitalWrite(OPTICAL_SENSOR_ENABLE_PIN, HIGH);
     delay(1);
   }
-  res.bottom = analogRead(SENSOR_POSITION_BOTTOM_PIN);
-  res.top = analogRead(SENSOR_POSITION_TOP_PIN);
+  res.b = analogRead(SENSOR_POSITION_B_PIN);
+  res.a = analogRead(SENSOR_POSITION_A_PIN);
   digitalWrite(OPTICAL_SENSOR_ENABLE_PIN, LOW);
+  // Just so that we're not illuminating all the time. Preserving LEDs, you know...
+  delay(10);
   return res;
 }
 
