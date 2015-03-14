@@ -1,5 +1,5 @@
 #define NET_ADDRESS "DiningBlinds"
-#define CONFIG_VERSION "BL1"
+#define CONFIG_VERSION "BL2"
 
 #define RS485_CONTROL_PIN 2
 #define MOTION_PIN 12
@@ -23,6 +23,7 @@ struct configuration_t {
   boolean sensorThresholdDirection; // 0 = less than; 1 = greater than
   int bottomSensorThreshold; // Value after which we assume blinds are at the bottom position
   int topSensorThreshold; // Same, but for top sensor
+  int delayAfterReachingPosition; // After optical sensor identifies target position was reached - roll for a little more to get past the edge
   unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
 };
 

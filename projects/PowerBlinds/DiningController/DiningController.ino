@@ -25,6 +25,7 @@ struct configuration_t conf = {
   0, //boolean sensorThresholdDirection; // 0 = less than; 1 = greater than
   900, //int bottomSensorThreshold; // Value after which we assume blinds are at the bottom position
   900, //int topSensorThreshold; // Same, but for top sensor
+  500, //int delayAfterReachingPosition; // After optical sensor identifies target position was reached - roll for a little more to get past the edge
   9600 //unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
 };
 
@@ -47,7 +48,7 @@ void setup()
   pinMode(OPTICAL_SENSOR_ENABLE_PIN, OUTPUT);
   
   strcpy(net.deviceID, NET_ADDRESS);
-  Serial.begin(9600);
+  Serial.begin(conf.baudRate);
 }
 
 void readConfig()
@@ -165,6 +166,15 @@ void processSetCommands()
     } else {
       net.sendResponse("ERROR");
     }
+  } else if (net.assertCommandStarts("setOpticalDelay:", buf)) {
+    unsigned int tmp = strtol(buf, NULL, 10);
+    if (tmp > 0 && tmp <= 2000) {
+      conf.delayAfterReachingPosition = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
   } else if (net.assertCommandStarts("setBaudRate:", buf)) {
     long tmp = strtol(buf, NULL, 10);
     // Supported: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
@@ -200,21 +210,24 @@ void checkMotorStopConditions() {
   // Limit when we sense it has reached "destination"
   if (motorDirection == MOTOR_DIRECTION_UP) {
     if (conf.sensorThresholdDirection == 0 && led.top < conf.topSensorThreshold) {
-      motorStop();
-      knownBlindsPosition = HIGH;
+      stopOnOptical(HIGH);
     } else if (conf.sensorThresholdDirection == 1 && led.top > conf.topSensorThreshold) {
-      motorStop();
-      knownBlindsPosition = HIGH;
+      stopOnOptical(HIGH);
     }
   } else {
     if (conf.sensorThresholdDirection == 0 && led.bottom < conf.bottomSensorThreshold) {
-      motorStop();
-      knownBlindsPosition = LOW;
+      stopOnOptical(LOW);
     } else if (conf.sensorThresholdDirection == 1 && led.bottom > conf.bottomSensorThreshold) {
-      motorStop();
-      knownBlindsPosition = LOW;
+      stopOnOptical(LOW);
     }
   }
+}
+
+void stopOnOptical(int knownPosition)
+{
+  delay(conf.delayAfterReachingPosition);
+  motorStop();
+  knownBlindsPosition = knownPosition;
 }
 
 void readMotion()
@@ -256,18 +269,19 @@ If switch was changed:
 */
 void readSwitch()
 {
-  if (getSwitchState() != lastSwitchState) {
+  int currentSwitchState = getSwitchState();
+  if (currentSwitchState != lastSwitchState) {
     if (millis() - lastSwitchTime < conf.switchStopWindow) {
       motorStop();
       knownBlindsPosition = -1;
     } else {
-      if (lastSwitchState == MOTOR_DIRECTION_DOWN) {
+      if (currentSwitchState == MOTOR_DIRECTION_DOWN) {
         motorDown();
       } else {
         motorUp();
       }
     }
-    lastSwitchState = !lastSwitchState;
+    lastSwitchState = currentSwitchState;
     lastSwitchTime = millis();
   }
 }
