@@ -1,5 +1,5 @@
 #define NET_ADDRESS "DiningBlinds"
-#define CONFIG_VERSION "BL2"
+#define CONFIG_VERSION "BL3"
 
 #define RS485_CONTROL_PIN 2
 #define MOTION_PIN 12
