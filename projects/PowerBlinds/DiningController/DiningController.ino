@@ -22,7 +22,7 @@ struct configuration_t conf = {
   // Default values for config
   10, //int maxMotorRuntime; // Number of seconds to limit individual motor run to
   200, //int switchStopWindow; // Number of milliseconds threshold to consider it stop command, rather than switch (e.g. double click speed)
-  700, //int bottomSensorThreshold; // Value after which we assume blinds are at the bottom position
+  600, //int bottomSensorThreshold; // Value after which we assume blinds are at the bottom position
   500, //int topSensorThreshold; // Difference between A & B to assume reaching the top
   100, //int delayAfterReachingPosition; // After optical sensor identifies target position was reached - roll for a little more to get past the edge
   9600 //unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
