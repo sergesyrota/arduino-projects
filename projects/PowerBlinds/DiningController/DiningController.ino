@@ -287,6 +287,8 @@ void motorUp()
   if (knownBlindsPosition == HIGH) {
     return;
   }
+  // Reset known position, as we're on the move!
+  knownBlindsPosition = -1;
   // Rolling up is the NC state of the relay, hence no power to relay coil
   digitalWrite(MOTOR_DIRECTION_PIN, LOW);
   delay(10); // give relay chance to switch, if it needs to
@@ -301,6 +303,8 @@ void motorDown()
   if (knownBlindsPosition == LOW) {
     return;
   }
+  // Reset known position, as we're on the move!
+  knownBlindsPosition = -1;
   // Rolling up is the NC state of the relay, hence need to power relay to pull down
   digitalWrite(MOTOR_DIRECTION_PIN, HIGH);
   delay(10); // give relay chance to switch, if it needs to
