@@ -277,6 +277,7 @@ int getSwitchState()
 void motorStop()
 {
   digitalWrite(MOTOR_ENABLE_PIN, LOW);
+  delay(10); // give relay chance to switch, if it needs to
   digitalWrite(MOTOR_DIRECTION_PIN, LOW);
   motorRunning = false;
 }
