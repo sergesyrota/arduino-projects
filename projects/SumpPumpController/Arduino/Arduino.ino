@@ -85,6 +85,8 @@ void loop()
       net.sendResponse(alert.condition);
     } else if (net.assertCommand("getDistance")) {
       net.sendResponse(itoa(readDistance(), buf, 10));
+    } else if (net.assertCommand("getPressure")) {
+      net.sendResponse(itoa(readPressure(), buf, 10));
     } else if (net.assertCommand("getBattVoltage")) {
       sprintf(buf, "%dmV", readBatteryVoltage());
       net.sendResponse(buf);
@@ -119,7 +121,7 @@ void loop()
   readPressure();
   
   // Read water depth if it's been too long since last time
-  if (now() - range.timeTaken > conf.selfTestTimeLimit) {
+  if (now() - range.timeTaken > conf.depthMeasureTime) {
     readDistance();
     // measure battery voltage with the same frequency
     readBatteryVoltage();
