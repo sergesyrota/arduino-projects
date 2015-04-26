@@ -350,10 +350,10 @@ UsedLibrary="d:/documents/hobbies/eagle_libs/serge.lbr"
 
 [Win_1]
 Type="Control Panel"
-Loc="3 2 2332 689"
+Loc="0 2 1919 689"
 State=1
 Number=0
 
 [Desktop]
-Screen="2560 1440"
+Screen="1920 1200"
 Window="Win_1"

@@ -4381,6 +4381,7 @@ BF959 corrected 2008.03.06&lt;br&gt;</description>
 <part name="R2" library="adafruit" deviceset="R-US_" device="R0603" value="300"/>
 <part name="P+4" library="supply1" deviceset="V+" device=""/>
 <part name="GND1" library="supply1" deviceset="GND" device=""/>
+<part name="D3" library="adafruit" deviceset="DIODE" device="SMA"/>
 </parts>
 <sheets>
 <sheet>
@@ -4412,6 +4413,7 @@ BF959 corrected 2008.03.06&lt;br&gt;</description>
 <instance part="R2" gate="G$1" x="-7.62" y="-2.54" rot="R180"/>
 <instance part="P+4" gate="1" x="-27.94" y="12.7"/>
 <instance part="GND1" gate="1" x="-27.94" y="-7.62"/>
+<instance part="D3" gate="G$1" x="25.4" y="35.56"/>
 </instances>
 <busses>
 </busses>
@@ -4448,7 +4450,11 @@ BF959 corrected 2008.03.06&lt;br&gt;</description>
 <segment>
 <pinref part="K1" gate="2" pin="O"/>
 <pinref part="P+1" gate="1" pin="V+"/>
-<wire x1="33.02" y1="27.94" x2="33.02" y2="38.1" width="0.1524" layer="91"/>
+<wire x1="33.02" y1="27.94" x2="33.02" y2="35.56" width="0.1524" layer="91"/>
+<pinref part="D3" gate="G$1" pin="C"/>
+<wire x1="33.02" y1="35.56" x2="33.02" y2="38.1" width="0.1524" layer="91"/>
+<wire x1="33.02" y1="35.56" x2="27.94" y2="35.56" width="0.1524" layer="91"/>
+<junction x="33.02" y="35.56"/>
 </segment>
 <segment>
 <pinref part="R5" gate="G$1" pin="2"/>
@@ -4514,6 +4520,10 @@ BF959 corrected 2008.03.06&lt;br&gt;</description>
 <wire x1="25.4" y1="0" x2="25.4" y2="2.54" width="0.1524" layer="91"/>
 <wire x1="25.4" y1="2.54" x2="20.32" y2="2.54" width="0.1524" layer="91"/>
 <junction x="20.32" y="2.54"/>
+<pinref part="D3" gate="G$1" pin="A"/>
+<wire x1="22.86" y1="35.56" x2="20.32" y2="35.56" width="0.1524" layer="91"/>
+<wire x1="20.32" y1="35.56" x2="20.32" y2="27.94" width="0.1524" layer="91"/>
+<junction x="20.32" y="27.94"/>
 </segment>
 </net>
 <net name="N$13" class="0">
