@@ -23,8 +23,8 @@ void setup()
   pinMode(I2C_CONTROL_PIN0, OUTPUT);
   pinMode(I2C_CONTROL_PIN1, OUTPUT);
   digitalWrite(LED1_PIN, LOW);
-  strcpy(net.deviceID, "BrAcSens");
-  Serial.begin(14400);
+  strcpy(net.deviceID, NET_ADDRESS);
+  Serial.begin(9600);
   
   // Set sensor addresses
   sensor[0].s0=LOW; 
