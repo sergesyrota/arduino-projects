@@ -23,7 +23,7 @@ void setup()
   digitalWrite(VALVE_OPEN_PIN, LOW);
   readTemp();
   strcpy(net.deviceID, "WtrMn");
-  Serial.begin(14400);
+  Serial.begin(9600);
 }
 
 void loop()
