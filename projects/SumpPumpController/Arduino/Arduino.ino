@@ -1,13 +1,10 @@
 #include <EEPROMex.h>
-#include <Wire.h>
-#include <VL53L0X.h>
 #include <SyrotaAutomation1.h>
 #include <Time.h>
 #include <avr/pgmspace.h>
 #include "include.h"
 
 SyrotaAutomation net = SyrotaAutomation(RS485_CONTROL_PIN);
-VL53L0X laserSensor;
 
 struct Range range;
 struct Selftest selftest;
@@ -24,11 +21,14 @@ struct configuration_t conf = {
   30, //int acPumpOnTimeWarning; // number of seconds AC pump can be on at a time before warning
   86400UL, //unsigned long selftestTimeBetween; // Minimum number of seconds between self tests
   20, //byte selfTestTimeLimit; // Length of DC Pump self test, if depth measurement is not met (seconds)
-  5, //byte depthMeasureTime; // Frequency with which water level should be read (seconds)
+  30, //int selfTestMinDepth; // Minimum depth needed to initialize self test
+  5, //int selfTestDepthDiff; // How much water lefel should drop for self test to be considered OK
+  1, //byte depthMeasureTime; // Frequency with which water level should be read (seconds)
   false, //boolean buzzerEnabled; // whether buzzer should sound in case of alert or not
-  15, //int laserMinValidMm; // Minimum reading to be considered valid for laser sensor
-  1000 //int laserMaxValidMm; // Maximum valid reading
+  512, //int zeroPressure; // 0-point for pressure sensor
+  6 //int pointsPerCm; // points per CM, can be negative, depending on which side of the differential measuring tube is connected
 };
+// 5mv per point; 58 points per kPa, 17 Pa per point, 98Pa per CM, 5.7 points per CM
 
 // Buffer for char conversions
 char buf [100];
@@ -44,15 +44,12 @@ void setup()
   pinMode(BUZZ_PIN, OUTPUT);
   pinMode(ACK_PIN, INPUT_PULLUP);
   pinMode(DC_PUMP_TRIGGER_PIN, OUTPUT);
+  pinMode(DEPTH_PRESSURE_SENSOR_PIN, INPUT);
   digitalWrite(DC_PUMP_TRIGGER_PIN, LOW);
   // Initialize with alert ON to make sure buzzer works
   alert.buzzerState = LOW;
 //  digitalWrite(BUZZ_PIN, HIGH);
 
-  // Laser sensor init
-  Wire.begin();
-  laserSensor.init();
-  laserSensor.setTimeout(500);
 }
 
 void readConfig()
@@ -177,7 +174,7 @@ void processSetCommands()
     }
   } else if (net.assertCommandStarts("setAlertWaterLevel:", buf)) {
     int tmp = strtol(buf, NULL, 10);
-    if (tmp > -80 && tmp < -3) {
+    if (tmp > -100 && tmp < 100) {
       conf.alertWaterLevel = tmp;
       saveConfig();
       net.sendResponse("OK");
@@ -249,6 +246,24 @@ void processSetCommands()
     } else {
       net.sendResponse("ERROR");
     }
+  } else if (net.assertCommandStarts("setSelfTestMinDepth:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp > -100 && tmp < 100) {
+      conf.selfTestMinDepth = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setSelfTestDepthDiff:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp > 0 && tmp < 100) {
+      conf.selfTestDepthDiff = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
   } else if (net.assertCommandStarts("setDepthMeasureTime:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp >= 0 && tmp < 120) {
@@ -262,6 +277,24 @@ void processSetCommands()
     int tmp = strtol(buf, NULL, 10);
     if (tmp == 1 || tmp == 0) {
       conf.buzzerEnabled = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setZeroPressure:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp >= 0 && tmp < 1023) {
+      conf.zeroPressure = tmp;
+      saveConfig();
+      net.sendResponse("OK");
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setPointsPerCm:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp >= -1024 && tmp < 1024) {
+      conf.pointsPerCm = tmp;
       saveConfig();
       net.sendResponse("OK");
     } else {
@@ -333,7 +366,7 @@ void checkDcSelfTestStart()
   if (range.highs[0] - range.lows[0] > 7 && // Last observer high/low looks legit
     range.highs[0] - range.distance >= 3 && // Make sure that we have at least 3 cm before reaching previous high
     range.highs[0] - range.distance < 10 && // But at the same time we're no more than 10 cm from reaching the top
-    range.distance > -55 // And just in case, hard code known distance at which we are reasonably sure there is enough water in the sump
+    range.distance > conf.selfTestMinDepth // And just in case, hard code known distance at which we are reasonably sure there is enough water in the sump
   ) {
     // All self test conditions are met. Begin the test
     dcSelfTestStart();
@@ -361,14 +394,12 @@ void checkDcSelfTestProgress() {
 //  if (selftest.batteryVoltageMv > currentVoltage) {
 //    selftest.batteryVoltageMv = currentVoltage;
 //  }
-  // Only time limit will stop the test at this point
-  if (now() - selftest.lastTestTime > conf.selfTestTimeLimit) {
+  // Limit self test to time or distance
+  int distance = readDistance();
+  if ((selftest.startingHeight - distance > conf.selfTestDepthDiff) || (now() - selftest.lastTestTime > conf.selfTestTimeLimit)) {
     digitalWrite(DC_PUMP_TRIGGER_PIN, LOW);
     selftest.nowActive = false;
-    // When DC pump is working, it might give trouble to distance sensor, so reading after it's off.
-    // Give 50ms to settle down
-    delay(50);
-    selftest.endingHeight = readDistance();
+    selftest.endingHeight = distance;
     selftest.testLength = now() - selftest.lastTestTime;
     selftest.batteryVoltageMv = getVoltage( BATTERY_VOLTAGE_PIN );
     
@@ -437,24 +468,14 @@ unsigned int readBatteryVoltage()
   return mv;
 }
 
-unsigned int readDistance()
+int readDistance()
 {
   range.timeTaken = now();
   // Since sensor is mounted at the top and looking down, 0 is considered full pit, and it goes down from there.
   // For some reason, I started getting very bad results with sensor in a pipe.
   // Adjusting to take the lowest of 3 measurements to try and cover it up until I figure out a better way
-  int reading;
-  for (int i=0; i<10; i++) {
-    reading = laserSensor.readRangeSingleMillimeters();
-    if (reading >= conf.laserMinValidMm && reading <= conf.laserMaxValidMm) {
-      range.distance = -reading/10;
-      break;
-    }
-  }
-  // Check for 10 failed attempts
-  if (reading < conf.laserMinValidMm || reading > conf.laserMaxValidMm) {
-    range.distance=0;
-  }
+  int pressure = analogRead(DEPTH_PRESSURE_SENSOR_PIN);
+  range.distance = (conf.zeroPressure - pressure) / conf.pointsPerCm;
   
   // Update observed highs and lows, they are used in DC pump self-test
   if (range.distance > range.highs[1]) {

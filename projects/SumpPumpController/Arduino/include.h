@@ -1,5 +1,5 @@
 // Config version
-#define CONFIG_VERSION "SP3"
+#define CONFIG_VERSION "SP4"
 // Acknowledge button pin
 #define ACK_PIN 9
 // Pin with buzzer output for sounding an alarm
@@ -14,6 +14,9 @@
 
 // Pressure sensor related data
 #define PRESSURE_SENSOR_PIN A0
+
+// Differential pressure sensor for water height
+#define DEPTH_PRESSURE_SENSOR_PIN A5
 
 // DC pump interface pins
 #define BATTERY_VOLTAGE_PIN A7
@@ -30,10 +33,12 @@ struct configuration_t {
   int acPumpOnTimeWarning; // number of seconds AC pump can be on at a time before warning
   unsigned long selftestTimeBetween; // Minimum number of seconds between self tests
   byte selfTestTimeLimit; // Length of DC Pump self test, if depth measurement is not met (seconds)
+  int selfTestMinDepth; // Minimum depth needed to initialize self test
+  int selfTestDepthDiff; // How much water lefel should drop for self test to be considered OK
   byte depthMeasureTime; // Frequency with which water level should be read (seconds)
   boolean buzzerEnabled; // whether buzzer should sound in case of alert or not
-  int laserMinValidMm; // Minimum reading to be considered valid for laser sensor
-  int laserMaxValidMm; // Maximum valid reading
+  int zeroPressure; // 0-point for pressure sensor
+  int pointsPerCm; // points per CM, can be negative, depending on which side of the differential measuring tube is connected
 };
 
 // Alert reason codes
