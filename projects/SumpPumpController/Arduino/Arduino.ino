@@ -1,12 +1,13 @@
 #include <EEPROMex.h>
-#include <SoftwareSerial.h>
-#include <Ultrasonic.h>
+#include <Wire.h>
+#include <VL53L0X.h>
 #include <SyrotaAutomation1.h>
 #include <Time.h>
+#include <avr/pgmspace.h>
 #include "include.h"
 
 SyrotaAutomation net = SyrotaAutomation(RS485_CONTROL_PIN);
-Ultrasonic ultrasonic(ULTRASONIC_TRIG_PIN, ULTRASONIC_ECHO_PIN); // Trig, Echo
+VL53L0X laserSensor;
 
 struct Range range;
 struct Selftest selftest;
@@ -18,13 +19,15 @@ struct configuration_t conf = {
   12000U, //unsigned int alertBatteryVoltage; // mV
   -40, //int alertWaterLevel; // Distance to the sensor in CM when alert should be triggered
   9600UL, //unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
-  520, //int acPumpOnThreshold; // reading of higher than this means pump is ON
-  600, //int alertPressureLevel; // reading of higher than this might indicate clogged pipe and needs to trigger an alarm
+  200, //int acPumpOnThreshold; // reading of higher than this means pump is ON
+  700, //int alertPressureLevel; // reading of higher than this might indicate clogged pipe and needs to trigger an alarm
   30, //int acPumpOnTimeWarning; // number of seconds AC pump can be on at a time before warning
   86400UL, //unsigned long selftestTimeBetween; // Minimum number of seconds between self tests
   20, //byte selfTestTimeLimit; // Length of DC Pump self test, if depth measurement is not met (seconds)
   5, //byte depthMeasureTime; // Frequency with which water level should be read (seconds)
-  false //boolean buzzerEnabled; // whether buzzer should sound in case of alert or not
+  false, //boolean buzzerEnabled; // whether buzzer should sound in case of alert or not
+  15, //int laserMinValidMm; // Minimum reading to be considered valid for laser sensor
+  1000 //int laserMaxValidMm; // Maximum valid reading
 };
 
 // Buffer for char conversions
@@ -45,6 +48,11 @@ void setup()
   // Initialize with alert ON to make sure buzzer works
   alert.buzzerState = LOW;
 //  digitalWrite(BUZZ_PIN, HIGH);
+
+  // Laser sensor init
+  Wire.begin();
+  laserSensor.init();
+  laserSensor.setTimeout(500);
 }
 
 void readConfig()
@@ -138,7 +146,7 @@ void loop()
   }
   
   // Take care of beeping a buzzer if alert is present and not acknowledged
-  if (alert.buzzerState == HIGH && (!alert.present || alert.acknowledged)) {
+  if (alert.buzzerState == HIGH && (!alert.present || alert.acknowledged || !conf.buzzerEnabled)) {
     digitalWrite(BUZZ_PIN, LOW);
     alert.buzzerState = LOW;
   }
@@ -266,19 +274,19 @@ void processSetCommands()
 
 void sendDebugResponse()
 {
-  sprintf(buf, "time=%lu", now());
+  sprintf(buf, PSTR("time=%lu"), now());
   net.responseSendPart(buf);
-  sprintf(buf, "rangeLH[0]=%d,%d", range.lows[0], range.highs[0]);
+  sprintf(buf, PSTR("rangeLH[0]=%d,%d"), range.lows[0], range.highs[0]);
   net.responseSendPart(buf);
-  sprintf(buf, "&rangeLH[1]=%d,%d", range.lows[1], range.highs[1]);
+  sprintf(buf, PSTR("&rangeLH[1]=%d,%d"), range.lows[1], range.highs[1]);
   net.responseSendPart(buf);
-  sprintf(buf, "&DcHeight=%d,%d", selftest.startingHeight, selftest.endingHeight);
+  sprintf(buf, PSTR("&DcHeight=%d,%d"), selftest.startingHeight, selftest.endingHeight);
   net.responseSendPart(buf);
-  sprintf(buf, "&pressure=%d", analogRead(PRESSURE_SENSOR_PIN));
+  sprintf(buf, PSTR("&pressure=%d"), analogRead(PRESSURE_SENSOR_PIN));
   net.responseSendPart(buf);
-  sprintf(buf, "&AcPumpCycles=%d", acpump.onCycles);
+  sprintf(buf, PSTR("&AcPumpCycles=%d"), acpump.onCycles);
   net.responseSendPart(buf);
-  sprintf(buf, "&lastAlertTime=%lu", alert.timeTriggered);
+  sprintf(buf, PSTR("&lastAlertTime=%lu"), alert.timeTriggered);
   net.responseSendPart(buf);
 //  sprintf(buf, );
 //  net.responseSendPart(buf);
@@ -294,17 +302,17 @@ void sendDebugResponse()
 
 void sendSelfTestResponse()
 {
-   sprintf(buf, "timeSince=%lu&", (now() - selftest.lastTestTime));
+   sprintf(buf, PSTR("timeSince=%lu&"), (now() - selftest.lastTestTime));
    net.responseSendPart(buf);
-   sprintf(buf, "cyclesSince=%d&", acpump.onCycles-selftest.acCycles);
+   sprintf(buf, PSTR("cyclesSince=%d&"), acpump.onCycles-selftest.acCycles);
    net.responseSendPart(buf);
-   sprintf(buf, "voltage=%d&", selftest.batteryVoltageMv);
+   sprintf(buf, PSTR("voltage=%d&"), selftest.batteryVoltageMv);
    net.responseSendPart(buf);
-   sprintf(buf, "length=%d&", (int)selftest.testLength);
+   sprintf(buf, PSTR("length=%d&"), (int)selftest.testLength);
    net.responseSendPart(buf);
-   sprintf(buf, "pumpedHeight=%d&", selftest.startingHeight - selftest.endingHeight);
+   sprintf(buf, PSTR("pumpedHeight=%d&"), selftest.startingHeight - selftest.endingHeight);
    net.responseSendPart(buf);
-   sprintf(buf, "result=%d", selftest.passed);
+   sprintf(buf, PSTR("result=%d"), selftest.passed);
    net.responseSendPart(buf);
    net.responseEnd();
 }
@@ -368,14 +376,14 @@ void checkDcSelfTestProgress() {
     // Battery voltage should not drop too much
     if (selftest.batteryVoltageMv < conf.alertBatteryVoltage) {
       selftest.passed = false;
-      sprintf(buf, "Weak battery: %dmV", selftest.batteryVoltageMv);
+      sprintf(buf, PSTR("Weak battery: %dmV"), selftest.batteryVoltageMv);
       raiseAlert(DcPumpMalfunction, buf);
       return;
     }
     // Determine if water level was reduced enough
     if (selftest.startingHeight - selftest.endingHeight < 5) {
       selftest.passed = false;
-      sprintf(buf, "DC Pump failure: %dCM pumped in %d sec.", (selftest.startingHeight - selftest.endingHeight), (int)selftest.testLength);
+      sprintf(buf, PSTR("DC Pump failure: %dCM pumped in %d sec."), (selftest.startingHeight - selftest.endingHeight), (int)selftest.testLength);
       raiseAlert(DcPumpMalfunction, buf);
       return;
     }
@@ -385,7 +393,7 @@ void checkDcSelfTestProgress() {
   }
 }
 
-void raiseAlert(alertReason reason, char *text)
+void raiseAlert(alertReason reason, const char *text)
 {
   // reason with lower number means it's higher importance, so need to override whatever there is right now
   if (!alert.present || reason < alert.reason) {
@@ -414,7 +422,7 @@ unsigned int readDcPumpVoltage()
   // If voltage is more than 0, then pump is on, and we need to sound an alert
   // Need to make sure to wait a few seconds after self test to see if DC pump is ON
   if (mv > 9000 && (now() - selftest.lastTestTime) > (conf.selfTestTimeLimit + 6)) {
-    raiseAlert(DcPumpActivated, "DC Pump ON");
+    raiseAlert(DcPumpActivated, PSTR("DC Pump ON"));
   }
   // We will not deactivate alarm when pump will be off. It needs to be reset manually.
 }
@@ -424,7 +432,7 @@ unsigned int readBatteryVoltage()
 {
   unsigned int mv = getVoltage( BATTERY_VOLTAGE_PIN );
   if (mv < conf.alertBatteryVoltage) {
-    raiseAlert(DischargedBattery, "Battery voltage");
+    raiseAlert(DischargedBattery, PSTR("Battery voltage"));
   }
   return mv;
 }
@@ -433,7 +441,20 @@ unsigned int readDistance()
 {
   range.timeTaken = now();
   // Since sensor is mounted at the top and looking down, 0 is considered full pit, and it goes down from there.
-  range.distance = -ultrasonic.Ranging(CM);
+  // For some reason, I started getting very bad results with sensor in a pipe.
+  // Adjusting to take the lowest of 3 measurements to try and cover it up until I figure out a better way
+  int reading;
+  for (int i=0; i<10; i++) {
+    reading = laserSensor.readRangeSingleMillimeters();
+    if (reading >= conf.laserMinValidMm && reading <= conf.laserMaxValidMm) {
+      range.distance = -reading/10;
+      break;
+    }
+  }
+  // Check for 10 failed attempts
+  if (reading < conf.laserMinValidMm || reading > conf.laserMaxValidMm) {
+    range.distance=0;
+  }
   
   // Update observed highs and lows, they are used in DC pump self-test
   if (range.distance > range.highs[1]) {
@@ -444,7 +465,9 @@ unsigned int readDistance()
   }
       
   if (range.distance > conf.alertWaterLevel) {
-    raiseAlert(WaterLevel, "Water level");
+    char tmp[40];
+    sprintf(tmp, PSTR("Water level: %d"), range.distance);
+    raiseAlert(WaterLevel, tmp);
   }
   return range.distance;
 }
@@ -455,7 +478,7 @@ int readPressure()
   
   // Alert business
   if (acpump.lastPressure > conf.alertPressureLevel) {
-    raiseAlert(HighPressure, "High pressure");
+    raiseAlert(HighPressure, PSTR("High pressure"));
   }
   
   boolean currentlyOn;
@@ -491,7 +514,7 @@ int readPressure()
   // Check if AC pump was on for too long
   if (currentlyOn) {
     if ((now() - acpump.switchOnTime) > conf.acPumpOnTimeWarning) {
-      raiseAlert(AcPumpOverload, "AC pump ON for too long");
+      raiseAlert(AcPumpOverload, PSTR("AC pump ON for too long"));
     }
   }
   

@@ -1,12 +1,9 @@
 // Config version
-#define CONFIG_VERSION "SP2"
+#define CONFIG_VERSION "SP3"
 // Acknowledge button pin
 #define ACK_PIN 9
 // Pin with buzzer output for sounding an alarm
 #define BUZZ_PIN 5
-// Ultrasonic HC-SR04 pins
-#define ULTRASONIC_ECHO_PIN 8
-#define ULTRASONIC_TRIG_PIN 7
 // SyrotaAutomation parameters
 #define RS485_CONTROL_PIN 2
 #define NET_ADDRESS "SumpPump"
@@ -35,6 +32,8 @@ struct configuration_t {
   byte selfTestTimeLimit; // Length of DC Pump self test, if depth measurement is not met (seconds)
   byte depthMeasureTime; // Frequency with which water level should be read (seconds)
   boolean buzzerEnabled; // whether buzzer should sound in case of alert or not
+  int laserMinValidMm; // Minimum reading to be considered valid for laser sensor
+  int laserMaxValidMm; // Maximum valid reading
 };
 
 // Alert reason codes
