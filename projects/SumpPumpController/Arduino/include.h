@@ -39,17 +39,19 @@ struct configuration_t {
   boolean buzzerEnabled; // whether buzzer should sound in case of alert or not
   int zeroPressure; // 0-point for pressure sensor
   int pointsPerCm; // points per CM, can be negative, depending on which side of the differential measuring tube is connected
+  int dcPumpOnTimeWarning; // how long DC pump can be on at a time before warning (seconds)
 };
 
 // Alert reason codes
 enum alertReason {
   WaterLevel = 0,
   DischargedBattery = 1,
-  DcPumpMalfunction = 2, // When self test is not passing (due to weak battery or not enough pumped height)
+  DcPumpOverload = 2, // When DC pump is on for extended period of time
   DcPumpActivated = 3, // When DC pump activated automatically, usually indicating AC pump failure
   AcPumpOverload = 4, // When AC pump runs for extended period of time
   HighPressure = 5, // When pressure in the pipe gets over certain limit
-  ExternallyForced = 6 // When external command to sound alert arrives
+  DcPumpMalfunction = 6, // When self test is not passing (due to weak battery or not enough pumped height)
+  ExternallyForced = 7 // When external command to sound alert arrives
 };
 
 // HC-SR04 related data
@@ -71,6 +73,14 @@ struct AcPump {
   unsigned int onCycles;
   // Last observed pressure
   int lastPressure;
+  // Last switch ON time
+  unsigned long switchOnTime;
+  // Current state
+  boolean currentlyOn;
+};
+
+// Pressure sensor and AC pump data
+struct DcPump {
   // Last switch ON time
   unsigned long switchOnTime;
   // Current state

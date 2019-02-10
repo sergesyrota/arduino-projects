@@ -10,6 +10,7 @@ struct Range range;
 struct Selftest selftest;
 struct Alert alert;
 struct AcPump acpump;
+struct DcPump dcpump;
 struct configuration_t conf = {
   CONFIG_VERSION,
   // Default values for config
@@ -26,9 +27,10 @@ struct configuration_t conf = {
   1, //byte depthMeasureTime; // Frequency with which water level should be read (seconds)
   false, //boolean buzzerEnabled; // whether buzzer should sound in case of alert or not
   512, //int zeroPressure; // 0-point for pressure sensor
-  6 //int pointsPerCm; // points per CM, can be negative, depending on which side of the differential measuring tube is connected
+  6, //int pointsPerCm; // points per CM, can be negative, depending on which side of the differential measuring tube is connected
+     // 5mv per point; 58 points per kPa, 17 Pa per point, 98Pa per CM, 5.7 points per CM
+  60 //int dcPumpOnTimeWarning; // how long DC pump can be on at a time before warning (seconds)
 };
-// 5mv per point; 58 points per kPa, 17 Pa per point, 98Pa per CM, 5.7 points per CM
 
 // Buffer for char conversions
 char buf [100];
@@ -82,7 +84,11 @@ void loop()
   if (net.messageReceived()) {
     if (net.assertCommand(PSTR("alertPresent")) || net.assertCommand(PSTR("alarmPresent"))) {
       if (alert.present) {
-        net.sendResponse(PSTR("YES"));
+        if (alert.acknowledged) {
+          net.sendResponse(PSTR("YES, Ack'ed"));
+        } else {
+          net.sendResponse(PSTR("YES"));
+        }
       } else {
         net.sendResponse(PSTR("NO"));
       }
@@ -300,6 +306,15 @@ void processSetCommands()
     } else {
       net.sendResponse(PSTR("ERROR"));
     }
+  } else if (net.assertCommandStarts(PSTR("setDcPumpOnTimeWarning:"), buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp >= 1 && tmp < 3600) {
+      conf.dcPumpOnTimeWarning = tmp;
+      saveConfig();
+      net.sendResponse(PSTR("OK"));
+    } else {
+      net.sendResponse(PSTR("ERROR: 1-3600 expected."));
+    }
   } else {
     net.sendResponse(PSTR("Unrecognized command"));
   }
@@ -454,6 +469,15 @@ unsigned int readDcPumpVoltage()
   // Need to make sure to wait a few seconds after self test to see if DC pump is ON
   if (mv > 9000 && (now() - selftest.lastTestTime) > (conf.selfTestTimeLimit + 6)) {
     raiseAlert(DcPumpActivated, PSTR("DC Pump ON"));
+    // Record that the pump is on, or process alert, if it was already on.
+    if (!dcpump.currentlyOn) {
+      dcpump.currentlyOn = true;
+      dcpump.switchOnTime = now();
+    } else if ((now() - dcpump.switchOnTime) > conf.dcPumpOnTimeWarning) {
+      raiseAlert(DcPumpOverload, PSTR("DC pump ON too long"));
+    }
+  } else {
+    dcpump.currentlyOn = false;
   }
   // We will not deactivate alarm when pump will be off. It needs to be reset manually.
 }
