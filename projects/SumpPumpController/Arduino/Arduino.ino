@@ -82,49 +82,49 @@ void loop()
 {
   // Process RS-485 commands
   if (net.messageReceived()) {
-    if (net.assertCommand(PSTR("alertPresent")) || net.assertCommand(PSTR("alarmPresent"))) {
+    if (net.assertCommand("alertPresent") || net.assertCommand("alarmPresent")) {
       if (alert.present) {
         if (alert.acknowledged) {
-          net.sendResponse(PSTR("YES, Ack'ed"));
+          net.sendResponse("YES, Ack'ed");
         } else {
-          net.sendResponse(PSTR("YES"));
+          net.sendResponse("YES");
         }
       } else {
-        net.sendResponse(PSTR("NO"));
+        net.sendResponse("NO");
       }
-    } else if (net.assertCommand(PSTR("alertReason"))) {
+    } else if (net.assertCommand("alertReason")) {
       net.sendResponse(alert.condition);
-    } else if (net.assertCommand(PSTR("getDistance"))) {
+    } else if (net.assertCommand("getDistance")) {
       net.sendResponse(itoa(readDistance(), buf, 10));
-    } else if (net.assertCommand(PSTR("getPressure"))) {
+    } else if (net.assertCommand("getPressure")) {
       net.sendResponse(itoa(readPressure(), buf, 10));
-    } else if (net.assertCommand(PSTR("getBattVoltage"))) {
+    } else if (net.assertCommand("getBattVoltage")) {
       sprintf(buf, "%dmV", readBatteryVoltage());
       net.sendResponse(buf);
-    } else if (net.assertCommand(PSTR("getAcPumpOnTime"))) {
+    } else if (net.assertCommand("getAcPumpOnTime")) {
       if (acpump.currentlyOn) {
         sprintf(buf, "%d", acpump.onSeconds + (now() - acpump.switchOnTime));
       } else {
         sprintf(buf, "%d", acpump.onSeconds);
       }
       net.sendResponse(buf);
-    } else if (net.assertCommand(PSTR("getLastSelfTest"))) {
+    } else if (net.assertCommand("getLastSelfTest")) {
       sendSelfTestResponse();
-    } else if (net.assertCommand(PSTR("forceAlert"))) {
-      raiseAlert(ExternallyForced, PSTR("Force command"));
-      net.sendResponse(PSTR("OK"));
-    } else if (net.assertCommand(PSTR("resetAlert"))) {
+    } else if (net.assertCommand("forceAlert")) {
+      raiseAlert(ExternallyForced, "Force command");
+      net.sendResponse("OK");
+    } else if (net.assertCommand("resetAlert")) {
       resetAlert();
-      net.sendResponse(PSTR("OK"));
-    } else if (net.assertCommand(PSTR("startSelfTest"))) {
+      net.sendResponse("OK");
+    } else if (net.assertCommand("startSelfTest")) {
       dcSelfTestStart();
-      net.sendResponse(PSTR("OK"));
-    } else if (net.assertCommandStarts(PSTR("set"), buf)) {
+      net.sendResponse("OK");
+    } else if (net.assertCommandStarts("set", buf)) {
       processSetCommands();
-    } else if (net.assertCommand(PSTR("debug"))) {
+    } else if (net.assertCommand("debug")) {
       sendDebugResponse();
     } else {
-      net.sendResponse(PSTR("Unrecognized command"));
+      net.sendResponse("Unrecognized command");
     }
   }
   
@@ -169,25 +169,25 @@ void loop()
 // Write to the configuration when we receive new parameters
 void processSetCommands()
 {
-  if (net.assertCommandStarts(PSTR("setAlertBatteryVoltage:"), buf)) {
+  if (net.assertCommandStarts("setAlertBatteryVoltage:", buf)) {
     unsigned int tmp = strtol(buf, NULL, 10);
     if (tmp > 9000 && tmp < 15000) {
       conf.alertBatteryVoltage = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setAlertWaterLevel:"), buf)) {
+  } else if (net.assertCommandStarts("setAlertWaterLevel:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > -100 && tmp < 100) {
       conf.alertWaterLevel = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setBaudRate:"), buf)) {
+  } else if (net.assertCommandStarts("setBaudRate:", buf)) {
     long tmp = strtol(buf, NULL, 10);
     // Supported: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
     if (tmp == 9600 ||
@@ -200,111 +200,111 @@ void processSetCommands()
     ) {
       conf.baudRate = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
       Serial.end();
       Serial.begin(tmp);
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setAcPumpOnThreshold:"), buf)) {
+  } else if (net.assertCommandStarts("setAcPumpOnThreshold:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > 0 && tmp < 1025) {
       conf.acPumpOnThreshold = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setAlertPressureLevel:"), buf)) {
+  } else if (net.assertCommandStarts("setAlertPressureLevel:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > 0 && tmp < 1025) {
       conf.alertPressureLevel = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setAcPumpOnTimeWarning:"), buf)) {
+  } else if (net.assertCommandStarts("setAcPumpOnTimeWarning:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > 0 && tmp < 30000) {
       conf.acPumpOnTimeWarning = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setSelftestTimeBetween:"), buf)) {
+  } else if (net.assertCommandStarts("setSelftestTimeBetween:", buf)) {
     long tmp = strtol(buf, NULL, 10);
     if (tmp > 0 && tmp < 1000000L) {
       conf.selftestTimeBetween = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setSelfTestTimeLimit:"), buf)) {
+  } else if (net.assertCommandStarts("setSelfTestTimeLimit:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     // More than 6 seconds, as we're checking that DC pump is on at 6 second mark.
     if (tmp > 6 && tmp < 200) {
       conf.selfTestTimeLimit = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setSelfTestMinDepth:"), buf)) {
+  } else if (net.assertCommandStarts("setSelfTestMinDepth:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > -100 && tmp < 100) {
       conf.selfTestMinDepth = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setSelfTestDepthDiff:"), buf)) {
+  } else if (net.assertCommandStarts("setSelfTestDepthDiff:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > 0 && tmp < 100) {
       conf.selfTestDepthDiff = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setDepthMeasureTime:"), buf)) {
+  } else if (net.assertCommandStarts("setDepthMeasureTime:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp >= 0 && tmp < 120) {
       conf.depthMeasureTime = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setBuzzerEnabled:"), buf)) {
+  } else if (net.assertCommandStarts("setBuzzerEnabled:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp == 1 || tmp == 0) {
       conf.buzzerEnabled = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setZeroPressure:"), buf)) {
+  } else if (net.assertCommandStarts("setZeroPressure:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp >= 0 && tmp < 1023) {
       conf.zeroPressure = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setPointsPerCm:"), buf)) {
+  } else if (net.assertCommandStarts("setPointsPerCm:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp >= -1024 && tmp < 1024) {
       conf.pointsPerCm = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse("ERROR");
     }
   } else if (net.assertCommandStarts(PSTR("setDcPumpOnTimeWarning:"), buf)) {
     int tmp = strtol(buf, NULL, 10);
@@ -316,7 +316,7 @@ void processSetCommands()
       net.sendResponse(PSTR("ERROR: 1-3600 expected."));
     }
   } else {
-    net.sendResponse(PSTR("Unrecognized command"));
+    net.sendResponse("Unrecognized command");
   }
 }
 
