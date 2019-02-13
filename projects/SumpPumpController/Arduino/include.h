@@ -1,5 +1,5 @@
 // Config version
-#define CONFIG_VERSION "SP4"
+#define CONFIG_VERSION "SP7"
 // Acknowledge button pin
 #define ACK_PIN 9
 // Pin with buzzer output for sounding an alarm

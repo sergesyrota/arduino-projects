@@ -336,8 +336,8 @@ void sendDebugResponse()
   net.responseSendPart(buf);
   sprintf(buf, PSTR("&lastAlertTime=%lu"), alert.timeTriggered);
   net.responseSendPart(buf);
-//  sprintf(buf, );
-//  net.responseSendPart(buf);
+  sprintf(buf, PSTR("&rawDepthPressure=%d"), analogRead(DEPTH_PRESSURE_SENSOR_PIN));
+  net.responseSendPart(buf);
 //  sprintf(buf, );
 //  net.responseSendPart(buf);
 //  sprintf(buf, );
