@@ -65,7 +65,7 @@ boolean SyrotaAutomation::messageReceived()
     }
 }
 
-boolean SyrotaAutomation::assertCommand(const char *command) {
+boolean SyrotaAutomation::assertCommand(char *command) {
     if (strcmp(command, buffer) == 0) {
         return true;
     } else {
@@ -73,7 +73,7 @@ boolean SyrotaAutomation::assertCommand(const char *command) {
     }
 }
 
-boolean SyrotaAutomation::assertCommandStarts(const char *command, char *paramString) {
+boolean SyrotaAutomation::assertCommandStarts(char *command, char *paramString) {
     if (strncmp(command, buffer, strlen(command)) == 0) {
         strcpy(paramString, buffer+strlen(command));
         return true;
@@ -82,7 +82,7 @@ boolean SyrotaAutomation::assertCommandStarts(const char *command, char *paramSt
     }
 }
 
-void SyrotaAutomation::sendResponse(const char *raw) {
+void SyrotaAutomation::sendResponse(char *raw) {
     // starting headers will be sent automatically
     responseSendPart(raw);
     responseEnd();
@@ -97,7 +97,7 @@ void SyrotaAutomation::responseStart() {
     responseStarted = true;
 }
 
-void SyrotaAutomation::responseSendPart(const char *raw) {
+void SyrotaAutomation::responseSendPart(char *raw) {
     if (!responseStarted) {
         // If response was not started, go ahead and start it now.
         responseStart();
