@@ -35,6 +35,68 @@ struct configuration_t conf = {
 // Buffer for char conversions
 char buf [100];
 
+// PROGMEM string declarations
+const char str_alertPresent[] PROGMEM = "alertPresent";
+const char str_alarmPresent[] PROGMEM = "alarmPresent";
+const char str_YES_Ack_ed[] PROGMEM = "YES, Ack'ed";
+const char str_YES[] PROGMEM = "YES";
+const char str_NO[] PROGMEM = "NO";
+const char str_alertReason[] PROGMEM = "alertReason";
+const char str_getDistance[] PROGMEM = "getDistance";
+const char str_getPressure[] PROGMEM = "getPressure";
+const char str_getBattVoltage[] PROGMEM = "getBattVoltage";
+const char str_dmV[] PROGMEM = "%dmV";
+const char str_getAcPumpOnTime[] PROGMEM = "getAcPumpOnTime";
+const char str_d[] PROGMEM = "%d";
+const char str_getLastSelfTest[] PROGMEM = "getLastSelfTest";
+const char str_forceAlert[] PROGMEM = "forceAlert";
+const char str_Force_command[] PROGMEM = "Force command";
+const char str_OK[] PROGMEM = "OK";
+const char str_resetAlert[] PROGMEM = "resetAlert";
+const char str_startSelfTest[] PROGMEM = "startSelfTest";
+const char str_set[] PROGMEM = "set";
+const char str_debug[] PROGMEM = "debug";
+const char str_Unrecognized_command[] PROGMEM = "Unrecognized command";
+const char str_setAlertBatteryVoltage[] PROGMEM = "setAlertBatteryVoltage:";
+const char str_ERROR[] PROGMEM = "ERROR";
+const char str_setAlertWaterLevel[] PROGMEM = "setAlertWaterLevel:";
+const char str_setBaudRate[] PROGMEM = "setBaudRate:";
+const char str_setAcPumpOnThreshold[] PROGMEM = "setAcPumpOnThreshold:";
+const char str_setAlertPressureLevel[] PROGMEM = "setAlertPressureLevel:";
+const char str_setAcPumpOnTimeWarning[] PROGMEM = "setAcPumpOnTimeWarning:";
+const char str_setSelftestTimeBetween[] PROGMEM = "setSelftestTimeBetween:";
+const char str_setSelfTestTimeLimit[] PROGMEM = "setSelfTestTimeLimit:";
+const char str_setSelfTestMinDepth[] PROGMEM = "setSelfTestMinDepth:";
+const char str_setSelfTestDepthDiff[] PROGMEM = "setSelfTestDepthDiff:";
+const char str_setDepthMeasureTime[] PROGMEM = "setDepthMeasureTime:";
+const char str_setBuzzerEnabled[] PROGMEM = "setBuzzerEnabled:";
+const char str_setZeroPressure[] PROGMEM = "setZeroPressure:";
+const char str_setPointsPerCm[] PROGMEM = "setPointsPerCm:";
+const char str_setDcPumpOnTimeWarning[] PROGMEM = "setDcPumpOnTimeWarning:";
+const char str_ERROR_1_3600_expected[] PROGMEM = "ERROR: 1-3600 expected.";
+const char str_time_lu[] PROGMEM = "time=%lu";
+const char str_rangeLH_0_d_d[] PROGMEM = "rangeLH[0]=%d,%d";
+const char str_rangeLH_1_d_d[] PROGMEM = "&rangeLH[1]=%d,%d";
+const char str_DcHeight_d_d[] PROGMEM = "&DcHeight=%d,%d";
+const char str_pressure_d[] PROGMEM = "&pressure=%d";
+const char str_AcPumpCycles_d[] PROGMEM = "&AcPumpCycles=%d";
+const char str_lastAlertTime_lu[] PROGMEM = "&lastAlertTime=%lu";
+const char str_rawDepthPressure_d[] PROGMEM = "&rawDepthPressure=%d";
+const char str_timeSince_lu[] PROGMEM = "timeSince=%lu&";
+const char str_cyclesSince_d[] PROGMEM = "cyclesSince=%d&";
+const char str_voltage_d[] PROGMEM = "voltage=%d&";
+const char str_length_d[] PROGMEM = "length=%d&";
+const char str_pumpedHeight_d[] PROGMEM = "pumpedHeight=%d&";
+const char str_result_d[] PROGMEM = "result=%d";
+const char str_Weak_battery_dmV[] PROGMEM = "Weak battery: %dmV";
+const char str_DC_Pump_failure_dCM_pumped_in_d_sec[] PROGMEM = "DC Pump failure: %dCM pumped in %d sec.";
+const char str_DC_Pump_ON[] PROGMEM = "DC Pump ON";
+const char str_DC_pump_ON_too_long[] PROGMEM = "DC pump ON too long";
+const char str_Battery_voltage[] PROGMEM = "Battery voltage";
+const char str_Water_level_d[] PROGMEM = "Water level: %d";
+const char str_High_pressure[] PROGMEM = "High pressure";
+const char str_AC_pump_ON_for_too_long[] PROGMEM = "AC pump ON for too long";
+
 void setup()
 {
   readConfig();
@@ -82,49 +144,49 @@ void loop()
 {
   // Process RS-485 commands
   if (net.messageReceived()) {
-    if (net.assertCommand(PSTR("alertPresent")) || net.assertCommand(PSTR("alarmPresent"))) {
+    if (net.assertCommand(PSTR((char*)pgm_read_word(&(str_alertPresent)))) || net.assertCommand(PSTR((char*)pgm_read_word(&(str_alarmPresent))))) {
       if (alert.present) {
         if (alert.acknowledged) {
-          net.sendResponse(PSTR("YES, Ack'ed"));
+          net.sendResponse(PSTR((char*)pgm_read_word(&(str_YES_Ack_ed))));
         } else {
-          net.sendResponse(PSTR("YES"));
+          net.sendResponse(PSTR((char*)pgm_read_word(&(str_YES))));
         }
       } else {
-        net.sendResponse(PSTR("NO"));
+        net.sendResponse(PSTR((char*)pgm_read_word(&(str_NO))));
       }
-    } else if (net.assertCommand(PSTR("alertReason"))) {
+    } else if (net.assertCommand(PSTR((char*)pgm_read_word(&(str_alertReason))))) {
       net.sendResponse(alert.condition);
-    } else if (net.assertCommand(PSTR("getDistance"))) {
+    } else if (net.assertCommand(PSTR((char*)pgm_read_word(&(str_getDistance))))) {
       net.sendResponse(itoa(readDistance(), buf, 10));
-    } else if (net.assertCommand(PSTR("getPressure"))) {
+    } else if (net.assertCommand(PSTR((char*)pgm_read_word(&(str_getPressure))))) {
       net.sendResponse(itoa(readPressure(), buf, 10));
-    } else if (net.assertCommand(PSTR("getBattVoltage"))) {
-      sprintf(buf, "%dmV", readBatteryVoltage());
+    } else if (net.assertCommand(PSTR((char*)pgm_read_word(&(str_getBattVoltage))))) {
+      sprintf(buf, (char*)pgm_read_word(&(str_dmV)), readBatteryVoltage());
       net.sendResponse(buf);
-    } else if (net.assertCommand(PSTR("getAcPumpOnTime"))) {
+    } else if (net.assertCommand(PSTR((char*)pgm_read_word(&(str_getAcPumpOnTime))))) {
       if (acpump.currentlyOn) {
-        sprintf(buf, "%d", acpump.onSeconds + (now() - acpump.switchOnTime));
+        sprintf(buf, (char*)pgm_read_word(&(str_d)), acpump.onSeconds + (now() - acpump.switchOnTime));
       } else {
-        sprintf(buf, "%d", acpump.onSeconds);
+        sprintf(buf, (char*)pgm_read_word(&(str_d)), acpump.onSeconds);
       }
       net.sendResponse(buf);
-    } else if (net.assertCommand(PSTR("getLastSelfTest"))) {
+    } else if (net.assertCommand(PSTR((char*)pgm_read_word(&(str_getLastSelfTest))))) {
       sendSelfTestResponse();
-    } else if (net.assertCommand(PSTR("forceAlert"))) {
-      raiseAlert(ExternallyForced, PSTR("Force command"));
-      net.sendResponse(PSTR("OK"));
-    } else if (net.assertCommand(PSTR("resetAlert"))) {
+    } else if (net.assertCommand(PSTR((char*)pgm_read_word(&(str_forceAlert))))) {
+      raiseAlert(ExternallyForced, PSTR((char*)pgm_read_word(&(str_Force_command))));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
+    } else if (net.assertCommand(PSTR((char*)pgm_read_word(&(str_resetAlert))))) {
       resetAlert();
-      net.sendResponse(PSTR("OK"));
-    } else if (net.assertCommand(PSTR("startSelfTest"))) {
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
+    } else if (net.assertCommand(PSTR((char*)pgm_read_word(&(str_startSelfTest))))) {
       dcSelfTestStart();
-      net.sendResponse(PSTR("OK"));
-    } else if (net.assertCommandStarts(PSTR("set"), buf)) {
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
+    } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_set))), buf)) {
       processSetCommands();
-    } else if (net.assertCommand(PSTR("debug"))) {
+    } else if (net.assertCommand(PSTR((char*)pgm_read_word(&(str_debug))))) {
       sendDebugResponse();
     } else {
-      net.sendResponse(PSTR("Unrecognized command"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_Unrecognized_command))));
     }
   }
   
@@ -169,25 +231,25 @@ void loop()
 // Write to the configuration when we receive new parameters
 void processSetCommands()
 {
-  if (net.assertCommandStarts(PSTR("setAlertBatteryVoltage:"), buf)) {
+  if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setAlertBatteryVoltage))), buf)) {
     unsigned int tmp = strtol(buf, NULL, 10);
     if (tmp > 9000 && tmp < 15000) {
       conf.alertBatteryVoltage = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setAlertWaterLevel:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setAlertWaterLevel))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > -100 && tmp < 100) {
       conf.alertWaterLevel = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setBaudRate:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setBaudRate))), buf)) {
     long tmp = strtol(buf, NULL, 10);
     // Supported: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
     if (tmp == 9600 ||
@@ -200,143 +262,143 @@ void processSetCommands()
     ) {
       conf.baudRate = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
       Serial.end();
       Serial.begin(tmp);
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setAcPumpOnThreshold:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setAcPumpOnThreshold))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > 0 && tmp < 1025) {
       conf.acPumpOnThreshold = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setAlertPressureLevel:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setAlertPressureLevel))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > 0 && tmp < 1025) {
       conf.alertPressureLevel = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setAcPumpOnTimeWarning:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setAcPumpOnTimeWarning))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > 0 && tmp < 30000) {
       conf.acPumpOnTimeWarning = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setSelftestTimeBetween:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setSelftestTimeBetween))), buf)) {
     long tmp = strtol(buf, NULL, 10);
     if (tmp > 0 && tmp < 1000000L) {
       conf.selftestTimeBetween = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setSelfTestTimeLimit:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setSelfTestTimeLimit))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     // More than 6 seconds, as we're checking that DC pump is on at 6 second mark.
     if (tmp > 6 && tmp < 200) {
       conf.selfTestTimeLimit = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setSelfTestMinDepth:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setSelfTestMinDepth))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > -100 && tmp < 100) {
       conf.selfTestMinDepth = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setSelfTestDepthDiff:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setSelfTestDepthDiff))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp > 0 && tmp < 100) {
       conf.selfTestDepthDiff = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setDepthMeasureTime:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setDepthMeasureTime))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp >= 0 && tmp < 120) {
       conf.depthMeasureTime = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setBuzzerEnabled:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setBuzzerEnabled))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp == 1 || tmp == 0) {
       conf.buzzerEnabled = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setZeroPressure:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setZeroPressure))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp >= 0 && tmp < 1023) {
       conf.zeroPressure = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setPointsPerCm:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setPointsPerCm))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp >= -1024 && tmp < 1024) {
       conf.pointsPerCm = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR))));
     }
-  } else if (net.assertCommandStarts(PSTR("setDcPumpOnTimeWarning:"), buf)) {
+  } else if (net.assertCommandStarts(PSTR((char*)pgm_read_word(&(str_setDcPumpOnTimeWarning))), buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp >= 1 && tmp < 3600) {
       conf.dcPumpOnTimeWarning = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_OK))));
     } else {
-      net.sendResponse(PSTR("ERROR: 1-3600 expected."));
+      net.sendResponse(PSTR((char*)pgm_read_word(&(str_ERROR_1_3600_expected))));
     }
   } else {
-    net.sendResponse(PSTR("Unrecognized command"));
+    net.sendResponse(PSTR((char*)pgm_read_word(&(str_Unrecognized_command))));
   }
 }
 
 void sendDebugResponse()
 {
-  sprintf(buf, PSTR("time=%lu"), now());
+  sprintf(buf, PSTR((char*)pgm_read_word(&(str_time_lu))), now());
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("rangeLH[0]=%d,%d"), range.lows[0], range.highs[0]);
+  sprintf(buf, PSTR((char*)pgm_read_word(&(str_rangeLH_0_d_d))), range.lows[0], range.highs[0]);
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&rangeLH[1]=%d,%d"), range.lows[1], range.highs[1]);
+  sprintf(buf, PSTR((char*)pgm_read_word(&(str_rangeLH_1_d_d))), range.lows[1], range.highs[1]);
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&DcHeight=%d,%d"), selftest.startingHeight, selftest.endingHeight);
+  sprintf(buf, PSTR((char*)pgm_read_word(&(str_DcHeight_d_d))), selftest.startingHeight, selftest.endingHeight);
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&pressure=%d"), analogRead(PRESSURE_SENSOR_PIN));
+  sprintf(buf, PSTR((char*)pgm_read_word(&(str_pressure_d))), analogRead(PRESSURE_SENSOR_PIN));
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&AcPumpCycles=%d"), acpump.onCycles);
+  sprintf(buf, PSTR((char*)pgm_read_word(&(str_AcPumpCycles_d))), acpump.onCycles);
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&lastAlertTime=%lu"), alert.timeTriggered);
+  sprintf(buf, PSTR((char*)pgm_read_word(&(str_lastAlertTime_lu))), alert.timeTriggered);
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&rawDepthPressure=%d"), analogRead(DEPTH_PRESSURE_SENSOR_PIN));
+  sprintf(buf, PSTR((char*)pgm_read_word(&(str_rawDepthPressure_d))), analogRead(DEPTH_PRESSURE_SENSOR_PIN));
   net.responseSendPart(buf);
 //  sprintf(buf, );
 //  net.responseSendPart(buf);
@@ -350,17 +412,17 @@ void sendDebugResponse()
 
 void sendSelfTestResponse()
 {
-   sprintf(buf, PSTR("timeSince=%lu&"), (now() - selftest.lastTestTime));
+   sprintf(buf, PSTR((char*)pgm_read_word(&(str_timeSince_lu))), (now() - selftest.lastTestTime));
    net.responseSendPart(buf);
-   sprintf(buf, PSTR("cyclesSince=%d&"), acpump.onCycles-selftest.acCycles);
+   sprintf(buf, PSTR((char*)pgm_read_word(&(str_cyclesSince_d))), acpump.onCycles-selftest.acCycles);
    net.responseSendPart(buf);
-   sprintf(buf, PSTR("voltage=%d&"), selftest.batteryVoltageMv);
+   sprintf(buf, PSTR((char*)pgm_read_word(&(str_voltage_d))), selftest.batteryVoltageMv);
    net.responseSendPart(buf);
-   sprintf(buf, PSTR("length=%d&"), (int)selftest.testLength);
+   sprintf(buf, PSTR((char*)pgm_read_word(&(str_length_d))), (int)selftest.testLength);
    net.responseSendPart(buf);
-   sprintf(buf, PSTR("pumpedHeight=%d&"), selftest.startingHeight - selftest.endingHeight);
+   sprintf(buf, PSTR((char*)pgm_read_word(&(str_pumpedHeight_d))), selftest.startingHeight - selftest.endingHeight);
    net.responseSendPart(buf);
-   sprintf(buf, PSTR("result=%d"), selftest.passed);
+   sprintf(buf, PSTR((char*)pgm_read_word(&(str_result_d))), selftest.passed);
    net.responseSendPart(buf);
    net.responseEnd();
 }
@@ -422,14 +484,14 @@ void checkDcSelfTestProgress() {
     // Battery voltage should not drop too much
     if (selftest.batteryVoltageMv < conf.alertBatteryVoltage) {
       selftest.passed = false;
-      sprintf(buf, PSTR("Weak battery: %dmV"), selftest.batteryVoltageMv);
+      sprintf(buf, PSTR((char*)pgm_read_word(&(str_Weak_battery_dmV))), selftest.batteryVoltageMv);
       raiseAlert(DcPumpMalfunction, buf);
       return;
     }
     // Determine if water level was reduced enough
     if (selftest.startingHeight - selftest.endingHeight < 5) {
       selftest.passed = false;
-      sprintf(buf, PSTR("DC Pump failure: %dCM pumped in %d sec."), (selftest.startingHeight - selftest.endingHeight), (int)selftest.testLength);
+      sprintf(buf, PSTR((char*)pgm_read_word(&(str_DC_Pump_failure_dCM_pumped_in_d_sec))), (selftest.startingHeight - selftest.endingHeight), (int)selftest.testLength);
       raiseAlert(DcPumpMalfunction, buf);
       return;
     }
@@ -468,13 +530,13 @@ unsigned int readDcPumpVoltage()
   // If voltage is more than 0, then pump is on, and we need to sound an alert
   // Need to make sure to wait a few seconds after self test to see if DC pump is ON
   if (mv > 9000 && (now() - selftest.lastTestTime) > (conf.selfTestTimeLimit + 6)) {
-    raiseAlert(DcPumpActivated, PSTR("DC Pump ON"));
+    raiseAlert(DcPumpActivated, PSTR((char*)pgm_read_word(&(str_DC_Pump_ON))));
     // Record that the pump is on, or process alert, if it was already on.
     if (!dcpump.currentlyOn) {
       dcpump.currentlyOn = true;
       dcpump.switchOnTime = now();
     } else if ((now() - dcpump.switchOnTime) > conf.dcPumpOnTimeWarning) {
-      raiseAlert(DcPumpOverload, PSTR("DC pump ON too long"));
+      raiseAlert(DcPumpOverload, PSTR((char*)pgm_read_word(&(str_DC_pump_ON_too_long))));
     }
   } else {
     dcpump.currentlyOn = false;
@@ -487,7 +549,7 @@ unsigned int readBatteryVoltage()
 {
   unsigned int mv = getVoltage( BATTERY_VOLTAGE_PIN );
   if (mv < conf.alertBatteryVoltage) {
-    raiseAlert(DischargedBattery, PSTR("Battery voltage"));
+    raiseAlert(DischargedBattery, PSTR((char*)pgm_read_word(&(str_Battery_voltage))));
   }
   return mv;
 }
@@ -511,7 +573,7 @@ int readDistance()
       
   if (range.distance > conf.alertWaterLevel) {
     char tmp[40];
-    sprintf(tmp, PSTR("Water level: %d"), range.distance);
+    sprintf(tmp, PSTR((char*)pgm_read_word(&(str_Water_level_d))), range.distance);
     raiseAlert(WaterLevel, tmp);
   }
   return range.distance;
@@ -523,7 +585,7 @@ int readPressure()
   
   // Alert business
   if (acpump.lastPressure > conf.alertPressureLevel) {
-    raiseAlert(HighPressure, PSTR("High pressure"));
+    raiseAlert(HighPressure, PSTR((char*)pgm_read_word(&(str_High_pressure))));
   }
   
   boolean currentlyOn;
@@ -559,7 +621,7 @@ int readPressure()
   // Check if AC pump was on for too long
   if (currentlyOn) {
     if ((now() - acpump.switchOnTime) > conf.acPumpOnTimeWarning) {
-      raiseAlert(AcPumpOverload, PSTR("AC pump ON for too long"));
+      raiseAlert(AcPumpOverload, PSTR((char*)pgm_read_word(&(str_AC_pump_ON_for_too_long))));
     }
   }
   
