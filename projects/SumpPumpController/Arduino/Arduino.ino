@@ -306,14 +306,14 @@ void processSetCommands()
     } else {
       net.sendResponse("ERROR");
     }
-  } else if (net.assertCommandStarts(PSTR("setDcPumpOnTimeWarning:"), buf)) {
+  } else if (net.assertCommandStarts("setDcPumpOnTimeWarning:", buf)) {
     int tmp = strtol(buf, NULL, 10);
     if (tmp >= 1 && tmp < 3600) {
       conf.dcPumpOnTimeWarning = tmp;
       saveConfig();
-      net.sendResponse(PSTR("OK"));
+      net.sendResponse("OK");
     } else {
-      net.sendResponse(PSTR("ERROR: 1-3600 expected."));
+      net.sendResponse("ERROR: 1-3600 expected.");
     }
   } else {
     net.sendResponse("Unrecognized command");
@@ -322,21 +322,21 @@ void processSetCommands()
 
 void sendDebugResponse()
 {
-  sprintf(buf, PSTR("time=%lu"), now());
+  sprintf(buf, ("time=%lu"), now());
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("rangeLH[0]=%d,%d"), range.lows[0], range.highs[0]);
+  sprintf(buf, ("rangeLH[0]=%d,%d"), range.lows[0], range.highs[0]);
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&rangeLH[1]=%d,%d"), range.lows[1], range.highs[1]);
+  sprintf(buf, ("&rangeLH[1]=%d,%d"), range.lows[1], range.highs[1]);
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&DcHeight=%d,%d"), selftest.startingHeight, selftest.endingHeight);
+  sprintf(buf, ("&DcHeight=%d,%d"), selftest.startingHeight, selftest.endingHeight);
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&pressure=%d"), analogRead(PRESSURE_SENSOR_PIN));
+  sprintf(buf, ("&pressure=%d"), analogRead(PRESSURE_SENSOR_PIN));
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&AcPumpCycles=%d"), acpump.onCycles);
+  sprintf(buf, ("&AcPumpCycles=%d"), acpump.onCycles);
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&lastAlertTime=%lu"), alert.timeTriggered);
+  sprintf(buf, ("&lastAlertTime=%lu"), alert.timeTriggered);
   net.responseSendPart(buf);
-  sprintf(buf, PSTR("&rawDepthPressure=%d"), analogRead(DEPTH_PRESSURE_SENSOR_PIN));
+  sprintf(buf, ("&rawDepthPressure=%d"), analogRead(DEPTH_PRESSURE_SENSOR_PIN));
   net.responseSendPart(buf);
 //  sprintf(buf, );
 //  net.responseSendPart(buf);
@@ -350,17 +350,17 @@ void sendDebugResponse()
 
 void sendSelfTestResponse()
 {
-   sprintf(buf, PSTR("timeSince=%lu&"), (now() - selftest.lastTestTime));
+   sprintf(buf, ("timeSince=%lu&"), (now() - selftest.lastTestTime));
    net.responseSendPart(buf);
-   sprintf(buf, PSTR("cyclesSince=%d&"), acpump.onCycles-selftest.acCycles);
+   sprintf(buf, ("cyclesSince=%d&"), acpump.onCycles-selftest.acCycles);
    net.responseSendPart(buf);
-   sprintf(buf, PSTR("voltage=%d&"), selftest.batteryVoltageMv);
+   sprintf(buf, ("voltage=%d&"), selftest.batteryVoltageMv);
    net.responseSendPart(buf);
-   sprintf(buf, PSTR("length=%d&"), (int)selftest.testLength);
+   sprintf(buf, ("length=%d&"), (int)selftest.testLength);
    net.responseSendPart(buf);
-   sprintf(buf, PSTR("pumpedHeight=%d&"), selftest.startingHeight - selftest.endingHeight);
+   sprintf(buf, ("pumpedHeight=%d&"), selftest.startingHeight - selftest.endingHeight);
    net.responseSendPart(buf);
-   sprintf(buf, PSTR("result=%d"), selftest.passed);
+   sprintf(buf, ("result=%d"), selftest.passed);
    net.responseSendPart(buf);
    net.responseEnd();
 }
@@ -422,14 +422,14 @@ void checkDcSelfTestProgress() {
     // Battery voltage should not drop too much
     if (selftest.batteryVoltageMv < conf.alertBatteryVoltage) {
       selftest.passed = false;
-      sprintf(buf, PSTR("Weak battery: %dmV"), selftest.batteryVoltageMv);
+      sprintf(buf, ("Weak battery: %dmV"), selftest.batteryVoltageMv);
       raiseAlert(DcPumpMalfunction, buf);
       return;
     }
     // Determine if water level was reduced enough
     if (selftest.startingHeight - selftest.endingHeight < 5) {
       selftest.passed = false;
-      sprintf(buf, PSTR("DC Pump failure: %dCM pumped in %d sec."), (selftest.startingHeight - selftest.endingHeight), (int)selftest.testLength);
+      sprintf(buf, ("DC Pump failure: %dCM pumped in %d sec."), (selftest.startingHeight - selftest.endingHeight), (int)selftest.testLength);
       raiseAlert(DcPumpMalfunction, buf);
       return;
     }
@@ -468,13 +468,13 @@ unsigned int readDcPumpVoltage()
   // If voltage is more than 0, then pump is on, and we need to sound an alert
   // Need to make sure to wait a few seconds after self test to see if DC pump is ON
   if (mv > 9000 && (now() - selftest.lastTestTime) > (conf.selfTestTimeLimit + 6)) {
-    raiseAlert(DcPumpActivated, PSTR("DC Pump ON"));
+    raiseAlert(DcPumpActivated, ("DC Pump ON"));
     // Record that the pump is on, or process alert, if it was already on.
     if (!dcpump.currentlyOn) {
       dcpump.currentlyOn = true;
       dcpump.switchOnTime = now();
     } else if ((now() - dcpump.switchOnTime) > conf.dcPumpOnTimeWarning) {
-      raiseAlert(DcPumpOverload, PSTR("DC pump ON too long"));
+      raiseAlert(DcPumpOverload, ("DC pump ON too long"));
     }
   } else {
     dcpump.currentlyOn = false;
@@ -487,7 +487,7 @@ unsigned int readBatteryVoltage()
 {
   unsigned int mv = getVoltage( BATTERY_VOLTAGE_PIN );
   if (mv < conf.alertBatteryVoltage) {
-    raiseAlert(DischargedBattery, PSTR("Battery voltage"));
+    raiseAlert(DischargedBattery, ("Battery voltage"));
   }
   return mv;
 }
@@ -511,7 +511,7 @@ int readDistance()
       
   if (range.distance > conf.alertWaterLevel) {
     char tmp[40];
-    sprintf(tmp, PSTR("Water level: %d"), range.distance);
+    sprintf(tmp, ("Water level: %d"), range.distance);
     raiseAlert(WaterLevel, tmp);
   }
   return range.distance;
@@ -523,7 +523,7 @@ int readPressure()
   
   // Alert business
   if (acpump.lastPressure > conf.alertPressureLevel) {
-    raiseAlert(HighPressure, PSTR("High pressure"));
+    raiseAlert(HighPressure, ("High pressure"));
   }
   
   boolean currentlyOn;
@@ -559,7 +559,7 @@ int readPressure()
   // Check if AC pump was on for too long
   if (currentlyOn) {
     if ((now() - acpump.switchOnTime) > conf.acPumpOnTimeWarning) {
-      raiseAlert(AcPumpOverload, PSTR("AC pump ON for too long"));
+      raiseAlert(AcPumpOverload, ("AC pump ON for too long"));
     }
   }
   
