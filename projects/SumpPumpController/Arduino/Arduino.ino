@@ -22,13 +22,13 @@ struct configuration_t conf = {
   30, //int acPumpOnTimeWarning; // number of seconds AC pump can be on at a time before warning
   86400UL, //unsigned long selftestTimeBetween; // Minimum number of seconds between self tests
   20, //byte selfTestTimeLimit; // Length of DC Pump self test, if depth measurement is not met (seconds)
-  30, //int selfTestMinDepth; // Minimum depth needed to initialize self test
-  5, //int selfTestDepthDiff; // How much water lefel should drop for self test to be considered OK
+  24, //int selfTestMinDepth; // Minimum depth needed to initialize self test
+  5, //int selfTestDepthDiff; // How much water level should drop for self test to be considered OK
   1, //byte depthMeasureTime; // Frequency with which water level should be read (seconds)
   false, //boolean buzzerEnabled; // whether buzzer should sound in case of alert or not
   512, //int zeroPressure; // 0-point for pressure sensor
-  6, //int pointsPerCm; // points per CM, can be negative, depending on which side of the differential measuring tube is connected
-     // 5mv per point; 58 points per kPa, 17 Pa per point, 98Pa per CM, 5.7 points per CM
+  5, //int pointsPerCm; // points per CM, can be negative, depending on which side of the differential measuring tube is connected
+     // 5mv per point; 58 points per kPa, 17 Pa per point, 98Pa per CM, 5.7 points per CM (rounding down, just in case)
   60 //int dcPumpOnTimeWarning; // how long DC pump can be on at a time before warning (seconds)
 };
 
