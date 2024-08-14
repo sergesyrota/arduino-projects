@@ -40,6 +40,7 @@ struct configuration_t {
   int zeroPressure; // 0-point for pressure sensor
   int pointsPerCm; // points per CM, can be negative, depending on which side of the differential measuring tube is connected
   int dcPumpOnTimeWarning; // how long DC pump can be on at a time before warning (seconds)
+  int acPumpOffThreshold; // reading lower than this means pump is off; in between it stays the same
 };
 
 // Alert reason codes

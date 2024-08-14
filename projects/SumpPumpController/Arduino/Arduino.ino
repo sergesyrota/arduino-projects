@@ -29,7 +29,8 @@ struct configuration_t conf = {
   512, //int zeroPressure; // 0-point for pressure sensor
   5, //int pointsPerCm; // points per CM, can be negative, depending on which side of the differential measuring tube is connected
      // 5mv per point; 58 points per kPa, 17 Pa per point, 98Pa per CM, 5.7 points per CM (rounding down, just in case)
-  60 //int dcPumpOnTimeWarning; // how long DC pump can be on at a time before warning (seconds)
+  60, //int dcPumpOnTimeWarning; // how long DC pump can be on at a time before warning (seconds)
+  70 //int acPumpOffThreshold; // reading lower than this means pump is off; in between it stays the same
 };
 
 // Buffer for char conversions
@@ -206,6 +207,15 @@ void processSetCommands()
       net.sendResponse("OK");
       Serial.end();
       Serial.begin(tmp);
+    } else {
+      net.sendResponse("ERROR");
+    }
+  } else if (net.assertCommandStarts("setAcPumpOffThreshold:", buf)) {
+    int tmp = strtol(buf, NULL, 10);
+    if (tmp > 0 && tmp < 1025) {
+      conf.acPumpOffThreshold = tmp;
+      saveConfig();
+      net.sendResponse("OK");
     } else {
       net.sendResponse("ERROR");
     }
@@ -530,10 +540,13 @@ int readPressure()
   }
   
   boolean currentlyOn;
+  // Need to add some hysterisis to the pump, so that it doesn't switch on and off randomly when the pressure varies on the threshold
   if (acpump.lastPressure > conf.acPumpOnThreshold) {
     currentlyOn = true;
-  } else {
+  } elseif (acpump.lastPressure < conf.acPumpOffThreshold) {
     currentlyOn = false;
+  } else {
+    currentlyOn = acpump.currentlyOn;
   }
   
   // If state change happened, need to record stats
