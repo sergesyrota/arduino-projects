@@ -1,6 +1,6 @@
 #include <EEPROMex.h>
 #include <SyrotaAutomation1.h>
-#include <Time.h>
+#include <TimeLib.h>
 #include <avr/pgmspace.h>
 #include "include.h"
 
@@ -17,7 +17,7 @@ struct configuration_t conf = {
   12000U, //unsigned int alertBatteryVoltage; // mV
   50, //int ; // Distance to the sensor in CM when alert should be triggered
   9600UL, //unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
-  200, //int acPumpOnThreshold; // reading of higher than this means pump is ON
+  250, //int acPumpOnThreshold; // reading of higher than this means pump is ON
   700, //int alertPressureLevel; // reading of higher than this might indicate clogged pipe and needs to trigger an alarm
   30, //int acPumpOnTimeWarning; // number of seconds AC pump can be on at a time before warning
   86400UL, //unsigned long selftestTimeBetween; // Minimum number of seconds between self tests
@@ -30,7 +30,7 @@ struct configuration_t conf = {
   5, //int pointsPerCm; // points per CM, can be negative, depending on which side of the differential measuring tube is connected
      // 5mv per point; 58 points per kPa, 17 Pa per point, 98Pa per CM, 5.7 points per CM (rounding down, just in case)
   60, //int dcPumpOnTimeWarning; // how long DC pump can be on at a time before warning (seconds)
-  70 //int acPumpOffThreshold; // reading lower than this means pump is off; in between it stays the same
+  120 //int acPumpOffThreshold; // reading lower than this means pump is off; in between it stays the same
 };
 
 // Buffer for char conversions
@@ -543,7 +543,7 @@ int readPressure()
   // Need to add some hysterisis to the pump, so that it doesn't switch on and off randomly when the pressure varies on the threshold
   if (acpump.lastPressure > conf.acPumpOnThreshold) {
     currentlyOn = true;
-  } elseif (acpump.lastPressure < conf.acPumpOffThreshold) {
+  } else if (acpump.lastPressure < conf.acPumpOffThreshold) {
     currentlyOn = false;
   } else {
     currentlyOn = acpump.currentlyOn;
