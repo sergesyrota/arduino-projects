@@ -15,7 +15,7 @@ struct configuration_t conf = {
   CONFIG_VERSION,
   // Default values for config
   12000U, //unsigned int alertBatteryVoltage; // mV
-  -40, //int alertWaterLevel; // Distance to the sensor in CM when alert should be triggered
+  50, //int ; // Distance to the sensor in CM when alert should be triggered
   9600UL, //unsigned long baudRate; // Serial/RS-485 rate: 9600, 14400, 19200, 28800, 38400, 57600, or 115200
   200, //int acPumpOnThreshold; // reading of higher than this means pump is ON
   700, //int alertPressureLevel; // reading of higher than this might indicate clogged pipe and needs to trigger an alarm
@@ -115,6 +115,9 @@ void loop()
       net.sendResponse("OK");
     } else if (net.assertCommand("resetAlert")) {
       resetAlert();
+      net.sendResponse("OK");
+    } else if (net.assertCommand("ackAlert")) {
+      acknowledgeAlert();
       net.sendResponse("OK");
     } else if (net.assertCommand("startSelfTest")) {
       dcSelfTestStart();
